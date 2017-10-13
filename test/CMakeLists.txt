@@ -84,3 +84,8 @@ target_link_libraries(ZKDNClientTest data_transfer_server)
 target_link_libraries(ZKDNClientTest namenode_protos)
 target_link_libraries(ZKDNClientTest native-fs)
 
+add_executable(UsernameTest permissions/UsernameTest.cc)
+target_link_libraries(UsernameTest zkwrapper /usr/local/lib/libzookeeper_mt.so)
+target_link_libraries(UsernameTest namenode_protos)
+target_link_libraries(UsernameTest ${GTEST})
+target_link_libraries(UsernameTest zk_client_nn rpcserver)

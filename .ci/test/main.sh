@@ -7,6 +7,7 @@ cd build/test
 ./DeleteTest
 ./NameNodeTest
 ./NativeFsTest
+./UsernameTest
 ./ZKDNClientTest
 ./ZKLockTest
 ./ZKWrapperTest
