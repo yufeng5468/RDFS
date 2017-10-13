@@ -781,6 +781,10 @@ bool ZkNnClient::create_file(CreateRequestProto &request,
   znode_data.replication = replication;
   znode_data.blocksize = blocksize;
   znode_data.filetype = IS_FILE;
+  // Initialize permissions for file with owner and admin.
+  znode_data.permissions[0] = znode_data.owner;
+  znode_data.perm_length = 1;
+  // TODO Security (Dan): maintain admin username in public space. Add admin to perm list.
 
   // if we failed, then do not set any status
   if (!create_file_znode(path, &znode_data))
@@ -863,6 +867,8 @@ void ZkNnClient::set_mkdir_znode(FileZNode *znode_data) {
   znode_data->blocksize = 0;
   znode_data->replication = 0;
   znode_data->filetype = IS_DIR;
+  // Note no permissions list because this is a directory not a file.
+  znode_data->perm_length = -1;
 }
 
 /**
