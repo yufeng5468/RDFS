@@ -21,6 +21,8 @@ cd build/test
 run_flaky_test ./NameNodeTest
 ./NativeFsTest
 run_flaky_test ./ZKDNClientTest
+./UsernameTest
+./ZKDNClientTest
 ./ZKLockTest
 run_flaky_test ./ZKWrapperTest
 ./ReadWriteTest

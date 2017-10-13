@@ -12,5 +12,6 @@ int main(int argc, char **argv) {
   system("~/rdfs/build/test/ZKDNClientTest");
   system("~/rdfs/build/test/ZKLockTest");
   system("~/rdfs/build/test/ZKWrapperTest");
+  system("~/rdfs/build/test/UsernameTest");
   return 1;
 }
