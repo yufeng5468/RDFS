@@ -92,7 +92,8 @@ std::string ClientNamenodeTranslator::getFileInfo(std::string input) {
   req.ParseFromString(input);
   logMessage(&req, "GetFileInfo ");
   GetFileInfoResponseProto res;
-  zk->get_info(req, res);
+  std::string client_name = getRPCServer().getUserName();
+  zk->get_info(req, res, client_name);
   logMessage(&res, "GetFileInfo response ");
   return Serialize(res);
 }
@@ -113,7 +114,8 @@ std::string ClientNamenodeTranslator::destroy(std::string input) {
   const std::string &src = req.src();
   const bool recursive = req.recursive();
   DeleteResponseProto res;
-  zk->destroy(req, res);
+  std::string client_name = getRPCServer().getUserName();
+  zk->destroy(req, res, client_name);
   return Serialize(res);
 }
 
@@ -134,7 +136,8 @@ std::string ClientNamenodeTranslator::getBlockLocations(std::string input) {
   req.ParseFromString(input);
   logMessage(&req, "GetBlockLocations ");
   GetBlockLocationsResponseProto res;
-  zk->get_block_locations(req, res);
+  std::string client_name = getRPCServer().getUserName();
+  zk->get_block_locations(req, res, client_name);
   return Serialize(res);
 }
 
@@ -168,8 +171,9 @@ std::string ClientNamenodeTranslator::complete(std::string input) {
   req.ParseFromString(input);
   logMessage(&req, "Complete ");
   CompleteResponseProto res;
+  std::string client_name = getRPCServer().getUserName();
   // TODO(2016) some optional fields need to be read
-  zk->complete(req, res);
+  zk->complete(req, res, client_name);
   return Serialize(res);
 }
 
@@ -183,7 +187,8 @@ std::string ClientNamenodeTranslator::abandonBlock(std::string input) {
   AbandonBlockResponseProto res;
   req.ParseFromString(input);
   logMessage(&req, "AbandonBlock ");
-  if (zk->abandon_block(req, res)) {
+  std::string client_name = getRPCServer().getUserName();
+  if (zk->abandon_block(req, res, client_name)) {
     return Serialize(res);
   } else {
     throw GetErrorRPCHeader("Could not abandon block", "");
@@ -195,7 +200,8 @@ std::string ClientNamenodeTranslator::addBlock(std::string input) {
   AddBlockResponseProto res;
   req.ParseFromString(input);
   logMessage(&req, "AddBlock ");
-  if (zk->add_block(req, res)) {
+  std::string client_name = getRPCServer().getUserName();
+  if (zk->add_block(req, res, client_name)) {
     return Serialize(res);
   } else {
     throw GetErrorRPCHeader("Could not add block", "");
@@ -207,7 +213,8 @@ std::string ClientNamenodeTranslator::rename(std::string input) {
   RenameResponseProto res;
   req.ParseFromString(input);
   logMessage(&req, "Rename ");
-  zk->rename(req, res);
+  std::string client_name = getRPCServer().getUserName();
+  zk->rename(req, res, client_name);
   return Serialize(res);
 }
 
@@ -221,7 +228,8 @@ std::string ClientNamenodeTranslator::getListing(std::string input) {
   GetListingResponseProto res;
   req.ParseFromString(input);
   logMessage(&req, "GetListing ");
-  if (zk->get_listing(req, res)) {
+  std::string client_name = getRPCServer().getUserName();
+  if (zk->get_listing(req, res, client_name)) {
     return Serialize(res);
   } else {
     throw GetErrorRPCHeader("Could not get listing", "");
@@ -244,8 +252,8 @@ std::string ClientNamenodeTranslator::setOwner(std::string input) {
   SetOwnerResponseProto res;
 
   req.ParseFromString(input);
-
-  if (zk->set_owner(req, res)) {
+  std::string client_name = getRPCServer().getUserName();
+  if (zk->set_owner(req, res, client_name)) {
     return Serialize(res);
   } else {
     throw GetErrorRPCHeader("Could not set file owner.", "");
@@ -256,7 +264,8 @@ std::string ClientNamenodeTranslator::getContentSummary(std::string input) {
   GetContentSummaryRequestProto req;
   req.ParseFromString(input);
   GetContentSummaryResponseProto res;
-  zk->get_content(req, res);
+  std::string client_name = getRPCServer().getUserName();
+  zk->get_content(req, res, client_name);
   return Serialize(res);
 }
 /**
