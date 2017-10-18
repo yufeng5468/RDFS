@@ -2,13 +2,27 @@
 
 set -ex
 
+run_flaky_test() {
+    for i in {1..3}
+    do
+        $1
+        if [ $? == 0 ] 
+	    then
+		    return 0
+	    fi
+    done
+
+    return 1
+}
+
 cd build/test
 ./ReplicationTest
 ./DeleteTest
-./NameNodeTest
+run_flaky_test ./NameNodeTest
 ./NativeFsTest
+run_flaky_test ./ZKDNClientTest
 ./UsernameTest
 ./ZKDNClientTest
 ./ZKLockTest
-./ZKWrapperTest
+run_flaky_test ./ZKWrapperTest
 ./ReadWriteTest
