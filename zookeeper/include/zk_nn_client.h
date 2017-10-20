@@ -33,7 +33,7 @@ typedef struct {
   char owner[256];  // the client who created the file
   char group[256];
   // TODO Security (Dan): justify max of 20 readers on a file. Higher? Lower?
-  std::string permissions[20]; // array of capacity 20 usernames allowed to view file
+  char *permissions[20]; // array of capacity 20 usernames allowed to view file
   int perm_length; // number of slots filled in permissions
   int permission_number;
 } FileZNode;
