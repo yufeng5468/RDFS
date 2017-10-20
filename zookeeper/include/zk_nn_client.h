@@ -13,6 +13,8 @@
 #include <ConfigReader.h>
 #include "util.h"
 
+#define MAX_USERNAME_LEN 256
+
 namespace zkclient {
 
 /**
@@ -30,10 +32,10 @@ typedef struct {
   // java.lang.String)
   std::uint64_t access_time;
   std::uint64_t modification_time;
-  char owner[256];  // the client who created the file
-  char group[256];
+  char owner[MAX_USERNAME_LEN];  // the client who created the file
+  char group[MAX_USERNAME_LEN];
   // TODO Security (Dan): justify max of 20 readers on a file. Higher? Lower?
-  char *permissions[20]; // array of capacity 20 usernames allowed to view file
+  char permissions[20][MAX_USERNAME_LEN]; // array of capacity 20 usernames allowed to view file
   int perm_length; // number of slots filled in permissions
   int permission_number;
 } FileZNode;
