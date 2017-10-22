@@ -14,7 +14,6 @@
 #include "ClientNamenodeProtocol.pb.h"
 #include <ConfigReader.h>
 #include <boost/algorithm/string.hpp>
-#include <zk_nn_client.h>
 
 #include "zk_lock.h"
 #include "zk_dn_client.h"
@@ -883,7 +882,8 @@ bool ZkNnClient::create_file(CreateRequestProto &request,
   // Initialize permissions for file with owner and admin.
   snprintf(znode_data.permissions[0], MAX_USERNAME_LEN, owner.c_str());
   znode_data.perm_length = 1;
-  // TODO Security (Dan): maintain admin username in public space. Add admin to perm list.
+  // TODO(danielbalkum): maintain admin username in public space.
+  // Add admin to perm list.
 
   // if we failed, then do not set any status
   if (!create_file_znode(path, &znode_data))
@@ -898,7 +898,9 @@ bool ZkNnClient::create_file(CreateRequestProto &request,
 /**
      * Rename a file in the zookeeper filesystem
      */
-void ZkNnClient::rename(RenameRequestProto& req, RenameResponseProto& res, std::string client_name) {
+void ZkNnClient::rename(RenameRequestProto& req,
+                        RenameResponseProto& res,
+                        std::string client_name) {
   std::string file_path = req.src();
 
   FileZNode znode_data;
@@ -1083,7 +1085,8 @@ bool ZkNnClient::get_listing(GetListingRequestProto &req,
           LocatedBlocksProto *blocks = status->mutable_locations();
           // TODO(2016): 134217728 should be a variable
           LOG(INFO) << "[child data length is] " << child_data.length;
-          get_block_locations(child_path, 0, child_data.length, blocks, client_name);
+          get_block_locations(child_path, 0, child_data.length, blocks,
+                              client_name);
           // get_block_locations()
         }
       }
@@ -1346,7 +1349,8 @@ void ZkNnClient::set_file_info(HdfsFileStatusProto *status,
 
   FsPermissionProto *permission = status->mutable_permission();
   // Shorcut to set permission to 777.
-  // TODO(Security): Should this be changed to read permission only for non-owner users?
+  // TODO(heliumj): Should this be changed to read permission only for non-owner
+  // users?
   permission->set_perm(~0);
   status->set_filetype(filetype);
   status->set_path(path);
@@ -1361,7 +1365,8 @@ void ZkNnClient::set_file_info(HdfsFileStatusProto *status,
   status->set_access_time(znode_data.access_time);
   LOG(INFO) << "Successfully set the file info ";
 }
-  bool ZkNnClient::set_permission(SetPermissionRequestProto &req, SetPermissionResponseProto &res) {
+  bool ZkNnClient::set_permission(SetPermissionRequestProto &req,
+                                  SetPermissionResponseProto &res) {
     int zk_error;
     const std::string path = req.src();
     FileZNode znode_data;
@@ -1386,17 +1391,7 @@ void ZkNnClient::set_file_info(HdfsFileStatusProto *status,
 
     return true;
   }
-//bool ZkNnClient::modifyAclEntries(ModifyAclEntriesRequestProto req, ModifyAclEntriesResponseProto res) {
-//    int zk_error;
-//    FileZNode znode_data;
-//    const std::string &path = req.src();
-//    auto entries = req.aclspec();
-//
-//    for (auto entry:entries) {
-//        entry.type();
-//    }
-//
-//}
+
 bool ZkNnClient::add_block(const std::string &file_path,
                            std::uint64_t &block_id,
                            std::vector<std::string> &data_nodes,

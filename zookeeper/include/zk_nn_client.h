@@ -34,9 +34,9 @@ typedef struct {
   std::uint64_t modification_time;
   char owner[MAX_USERNAME_LEN];  // the client who created the file
   char group[MAX_USERNAME_LEN];
-  // TODO Security (Dan): justify max of 20 readers on a file. Higher? Lower?
-  char permissions[20][MAX_USERNAME_LEN]; // array of capacity 20 usernames allowed to view file
-  int perm_length; // number of slots filled in permissions
+  // TODO(danielbalkum): justify max of 20 readers on a file. Higher? Lower?
+  char permissions[20][MAX_USERNAME_LEN];
+  int perm_length;  // number of slots filled in permissions
   int permission_number;
 } FileZNode;
 
@@ -104,48 +104,64 @@ class ZkNnClient : public ZkClientCommon {
    * @param zk_in shared pointer to a ZKWrapper
    * @return ZkNnClient
    */
-  explicit ZkNnClient(std::shared_ptr<ZKWrapper> zk_in, bool secureMode=false);
+  explicit ZkNnClient(std::shared_ptr<ZKWrapper> zk_in,
+                      bool secureMode = false);
   void register_watches();
 
   /**
    * These methods will correspond to proto calls that the client namenode protocol handles
    */
 
-  void get_info(GetFileInfoRequestProto &req, GetFileInfoResponseProto &res, std::string client_name="default");
-  bool create_file(CreateRequestProto &request, CreateResponseProto &response);
+  void get_info(GetFileInfoRequestProto &req,
+                GetFileInfoResponseProto &res,
+                std::string client_name = "default");
+  bool create_file(CreateRequestProto &request,
+                   CreateResponseProto &response);
   void get_block_locations(GetBlockLocationsRequestProto &req,
                            GetBlockLocationsResponseProto &res,
-                           std::string client_name="default");
-  void mkdir(MkdirsRequestProto &req, MkdirsResponseProto &res);
-  void destroy(DeleteRequestProto &req, DeleteResponseProto &res, std::string client_name="default");
-  void complete(CompleteRequestProto &req, CompleteResponseProto &res, std::string client_name="default");
-  void rename(RenameRequestProto &req, RenameResponseProto &res, std::string client_name="default");
-  bool get_listing(GetListingRequestProto &req, GetListingResponseProto &res, std::string client_name="default");
+                           std::string client_name = "default");
+  void mkdir(MkdirsRequestProto &req,
+             MkdirsResponseProto &res);
+  void destroy(DeleteRequestProto &req,
+               DeleteResponseProto &res,
+               std::string client_name = "default");
+  void complete(CompleteRequestProto &req,
+                CompleteResponseProto &res,
+                std::string client_name = "default");
+  void rename(RenameRequestProto &req,
+              RenameResponseProto &res,
+              std::string client_name = "default");
+  bool get_listing(GetListingRequestProto &req,
+                   GetListingResponseProto &res,
+                   std::string client_name = "default");
   void get_content(GetContentSummaryRequestProto &req,
                    GetContentSummaryResponseProto &res,
-                   std::string client_name="default");
-
+                   std::string client_name = "default");
   void set_file_info_content(ContentSummaryProto *status,
-                             const std::string &path, FileZNode &znode_data);
-
- //bool modifyAclEntries(ModifyAclEntriesRequestProto req, ModifyAclEntriesResponseProto res);
-  bool set_permission(SetPermissionRequestProto &req, SetPermissionResponseProto &res);
-    /**
+                             const std::string &path,
+                             FileZNode &znode_data);
+  bool set_permission(SetPermissionRequestProto &req,
+                      SetPermissionResponseProto &res);
+  /**
    * Sets the owner of the file.
    */
-  bool set_owner(SetOwnerRequestProto &req, SetOwnerResponseProto &res, std::string client_name="default");
+  bool set_owner(SetOwnerRequestProto &req,
+                 SetOwnerResponseProto &res,
+                 std::string client_name = "default");
 
   /**
-       * Add block.
-       */
-  bool add_block(AddBlockRequestProto &req, AddBlockResponseProto &res, std::string client_name="default");
+   * Add block.
+   */
+  bool add_block(AddBlockRequestProto &req,
+                 AddBlockResponseProto &res,
+                 std::string client_name = "default");
 
   /**
    * Abandons the block - basically reverses all of add block's multiops
    */
   bool abandon_block(AbandonBlockRequestProto &req,
                      AbandonBlockResponseProto &res,
-                     std::string client_name="default");
+                     std::string client_name = "default");
 
   bool previousBlockComplete(uint64_t prev_id);
   /**
@@ -195,7 +211,7 @@ class ZkNnClient : public ZkClientCommon {
                            google::protobuf::uint64 offset,
                            google::protobuf::uint64 length,
                            LocatedBlocksProto *blocks,
-                           std::string client_name="default");
+                           std::string client_name = "default");
 
  private:
   /**
@@ -323,7 +339,7 @@ class ZkNnClient : public ZkClientCommon {
   /**
    * Check access to a file
    */
-  bool checkAccess(std::string username, FileZNode &znode_data); 
+  bool checkAccess(std::string username, FileZNode &znode_data);
 
 
   const int UNDER_CONSTRUCTION = 1;
