@@ -22,10 +22,9 @@ include_directories(../rice-namenode/include)
 include_directories(../rice-datanode/include)
 include_directories(../native-filesystem/include)
 include_directories(../rpcserver/include)
+include_directories(../storage/include)
 
 link_directories(/home/vagrant/rdfs/build/zkwrapper)
-
-add_executable(RunAllTests run-all/run-all-tests.cc)
 
 add_executable(NameNodeTest namenode/NameNodeTest.cc)
 target_link_libraries(NameNodeTest namenode_protos)
@@ -89,3 +88,11 @@ target_link_libraries(UsernameTest zkwrapper /usr/local/lib/libzookeeper_mt.so)
 target_link_libraries(UsernameTest namenode_protos)
 target_link_libraries(UsernameTest ${GTEST})
 target_link_libraries(UsernameTest zk_client_nn rpcserver)
+
+add_executable(StorageTest storage/StorageTest.cc)
+target_link_libraries(StorageTest ${GTEST_LIBRARIES} pthread)
+target_link_libraries(StorageTest ${GTEST})
+target_link_libraries(StorageTest storage)
+target_link_libraries(StorageTest zk_client_nn rpcserver)
+target_link_libraries(StorageTest namenode_protos)
+target_link_libraries(StorageTest zkwrapper /usr/local/lib/libzookeeper_mt.so)
