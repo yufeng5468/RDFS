@@ -513,15 +513,19 @@ bool ZkNnClient::create_file_znode(const std::string &path,
     // serialize struct to byte vector
     std::vector<std::uint8_t> data(sizeof(*znode_data));
     file_znode_struct_to_vec(znode_data, data);
-    // crate the node in zookeeper
+    // create the node in zookeeper
     if (!zk->create(ZookeeperPath(path), data, error_code)) {
       LOG(ERROR) << "Create failed with error code " << error_code;
       return false;
       // TODO(2016): handle error
     }
+
+    if (!zk->create(LeaseZookeeperPath(path), ZKWrapper::EMPTY_VECTOR, error_code)) {
+      LOG(ERROR) << "Create lease file path failed" << error_code;
+      return false;
+      // TODO(2016): handle error
+    }
     return true;
-  }
-  return false;
 }
 
 bool ZkNnClient::blockDeleted(uint64_t uuid, std::string id) {
@@ -1140,6 +1144,22 @@ bool ZkNnClient::sort_by_xmits(const std::vector<std::string> &unsorted_dn_ids,
   }
 
   return true;
+}
+
+std::string ZkNnClient::LeaseZookeeperPath(const std::string & hadoopPath) {
+  std::string zkpath = NAMESPACE_PATH;
+  if (hadoopPath.size() == 0) {
+    LOG(ERROR) << " this hadoop path is invalid";
+  }
+  if (hadoopPath.at(0) != '/') {
+    zkpath += "/";
+  }
+  zkpath += hadoopPath;
+  if (zkpath.at(zkpath.length() - 1) != '/') {
+    zkpath += "/";
+  }
+  zkpath += LEASES;
+  return zkpath;
 }
 
 std::string ZkNnClient::ZookeeperPath(const std::string &hadoopPath) {
