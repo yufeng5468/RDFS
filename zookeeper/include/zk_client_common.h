@@ -36,6 +36,7 @@ class ZkClientCommon {
   static const char BLOCK_LOCATIONS[];
   static const char BLOCKS[];
   static const char LEASES[];
+  static const char CLIENTS[];
 
  private:
   static const std::string CLASS_NAME;
