@@ -20,13 +20,21 @@
 
 namespace zkclient {
 
+
+typedef enum class FileStatus : int {
+    UnderConstruction,
+    FileComplete,
+    UnderDestruction
+} FileStatus;
+
 /**
  * This is the basic znode to describe a file
  */
 typedef struct {
   uint32_t replication;
   uint64_t blocksize;
-  int under_construction;  // 1 for under construction, 0 for complete
+  // 1 for under construction, 0 for complete
+  zkclient::FileStatus under_construction;
   int filetype;  // 0 or 1 for dir, 2 for file, 3 for symlinks (not supported)
   std::uint64_t length;
   // https://hadoop.apache.org/docs/r2.4.1/api/org/apache/hadoop/fs/
@@ -37,7 +45,6 @@ typedef struct {
   std::uint64_t modification_time;
   char owner[MAX_USERNAME_LEN];  // the client who created the file
   char group[MAX_USERNAME_LEN];
-  // TODO(danielbalkum): justify max of 20 readers on a file. Higher? Lower?
   char permissions[20][MAX_USERNAME_LEN];
   int perm_length;  // number of slots filled in permissions
   int permission_number;
@@ -113,6 +120,49 @@ using hadoop::hdfs::SetPermissionResponseProto;
 class ZkNnClient : public ZkClientCommon {
  public:
   char policy;
+
+  enum class ListingResponse {
+      Ok,                   // 0
+      FileDoesNotExist,     // 1
+      FailedChildRetrieval  // 2
+  };
+
+  enum class DeleteResponse {
+      Ok,
+      FileDoesNotExist,
+      FileUnderConstruction,
+      FileIsDirectoryMismatch,
+      FailedChildRetrieval,
+      FailedBlockRetrieval,
+      FailedDataNodeRetrieval,
+      FailedZookeeperOp
+  };
+
+  enum class GetFileInfoResponse {
+    Ok,
+    FileDoesNotExist,
+    FailedReadZnode
+  };
+
+  enum class MkdirResponse {
+      Ok,
+      FailedZnodeCreation
+  };
+
+  enum class CreateResponse {
+      Ok,
+      FileAlreadyExists,
+      FailedMkdir,
+      FailedCreateZnode
+  };
+
+  enum class RenameResponse {
+      Ok,
+      FileDoesNotExist,
+      RenameOpsFailed,
+      InvalidType,
+      MultiOpFailed
+  };
 
   explicit ZkNnClient(std::string zkIpAndAddress);
 
@@ -235,6 +285,11 @@ class ZkNnClient : public ZkClientCommon {
                            LocatedBlocksProto *blocks,
                            std::string client_name = "default");
 
+  /**
+   * Read a znode corresponding to a file into znode_data
+   */
+  void read_file_znode(FileZNode &znode_data, const std::string &path);
+
  private:
   /**
    * Given a vector of DN IDs, sorts them from fewest to most number of transmits
@@ -261,7 +316,7 @@ class ZkNnClient : public ZkClientCommon {
    * Crate a znode corresponding to a file of "filetype", with path "path", with
    * znode data contained in "znode_data"
    */
-  int create_file_znode(const std::string &path, FileZNode *znode_data);
+  bool create_file_znode(const std::string &path, FileZNode *znode_data);
 
   /**
    * Set the default information in a directory znode struct
@@ -272,12 +327,7 @@ class ZkNnClient : public ZkClientCommon {
    * all the parent directories which are not in zookeeper already. Return false
    * if the creation did not work, true otherwise
    */
-  bool mkdir_helper(const std::string &path, bool create_parent);
-
-  /**
-   * Read a znode corresponding to a file into znode_data
-   */
-  void read_file_znode(FileZNode &znode_data, const std::string &path);
+  MkdirResponse mkdir_helper(const std::string &path, bool create_parent);
 
   /**
    * Serialize a znode struct representation to a byte array to feed into zookeeper
@@ -290,7 +340,7 @@ class ZkNnClient : public ZkClientCommon {
    */
   void delete_node_wrapper(std::string &path, DeleteResponseProto &response);
 
-  bool destroy_helper(const std::string &path,
+  DeleteResponse destroy_helper(const std::string &path,
                       std::vector<std::shared_ptr<ZooOp>> &ops);
 
   /**
