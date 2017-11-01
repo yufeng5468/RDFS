@@ -15,6 +15,7 @@
 #include "ClientNamenodeProtocol.pb.h"
 #include <ConfigReader.h>
 #include "util.h"
+#include "LRUCache.h"
 
 namespace zkclient {
 
@@ -388,6 +389,8 @@ class ZkNnClient : public ZkClientCommon {
   // in millisecons, 10 minute timeout when waiting for
   // replication acknowledgements
   const int ACK_TIMEOUT = 600000;
+
+    lru::Cache<std::string, std::vector<std::uint8_t>> cache;
 };
 
 }  // namespace zkclient

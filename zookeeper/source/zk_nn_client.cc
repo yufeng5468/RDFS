@@ -59,6 +59,7 @@ namespace zkclient {
 ZkNnClient::ZkNnClient(std::string zkIpAndAddress) :
     ZkClientCommon(zkIpAndAddress) {
   mkdir_helper("/", false);
+//    lru::Cache<String, String> cache(3,0);
 }
 
 ZkNnClient::ZkNnClient(std::shared_ptr<ZKWrapper> zk_in) :
