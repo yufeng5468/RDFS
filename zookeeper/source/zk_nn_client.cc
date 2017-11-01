@@ -57,17 +57,6 @@ using hadoop::hdfs::DatanodeIDProto;
 
 namespace zkclient {
 
-ZkNnClient::ZkNnClient(std::string zkIpAndAddress) :
-		ZkClientCommon(zkIpAndAddress) {
-	mkdir_helper("/", false);
-//    lru::Cache<String, String> cache(3,0);
-}
-
-ZkNnClient::ZkNnClient(std::shared_ptr<ZKWrapper> zk_in) :
-		ZkClientCommon(zk_in) {
-	mkdir_helper("/", false);
-}
-
 /*
 * A simple print function that will be triggered when
 * namenode loses a heartbeat
@@ -1009,7 +998,7 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
 	if (cache->contains(src)) {
 		// Get cached
 		auto listing = cache->get(src);
-		res.set_allocated_dirlist(listing.get());
+		res.set_allocated_dirlist(listing);
 	} else {
 		// From 2016:
 		// if src is a file then just return that file with remaining = 0
@@ -1021,7 +1010,7 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
 
 		const int start_after = req.startafter();
 		const bool need_location = req.needlocation();
-		auto listing = std::make_shared<DirectoryListingProto>(res.mutable_dirlist());
+		DirectoryListingProto *listing = res.mutable_dirlist();
 
 		// Set watcher on root and examine node
 		if (zk->wexists(src, exists, watcher_listing, this, error_code) && exists) {
@@ -1041,8 +1030,7 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
 			} else {
 				// Update listing with directory info
 				std::vector<std::string> children;
-
-				if (!zk->get_children(ZookeeperFilePath(src), children, error_code)) {
+				if (!zk->wget_children(ZookeeperFilePath(src), children, watcher_listing, this, error_code)) {
 					LOG(FATAL) << "Failed to get children for " << ZookeeperFilePath(src);
 					return ListingResponse::FailedChildRetrieval;
 				} else {

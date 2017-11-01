@@ -155,7 +155,10 @@ public:
 		MultiOpFailed
 	};
 
-	explicit ZkNnClient(std::string zkIpAndAddress) : cache(new lru::Cache()) {};
+	explicit ZkNnClient(std::string zkIpAndAddress) : cache(),
+													  ZkClientCommon(zkIpAndAddress) {
+		mkdir_helper("/", false);
+	};
 
 	/**
 	 * Use this constructor to build ZkNnClient with a custom ZKWrapper.
@@ -164,7 +167,10 @@ public:
 	 * @param zk_in shared pointer to a ZKWrapper
 	 * @return ZkNnClient
 	 */
-	explicit ZkNnClient(std::shared_ptr<ZKWrapper> zk_in) : cache(new lru::Cache()) {};
+	explicit ZkNnClient(std::shared_ptr<ZKWrapper> zk_in) : cache(),
+															ZkClientCommon(zk_in) {
+		mkdir_helper("/", false);
+	};
 
 	void register_watches();
 
@@ -394,7 +400,7 @@ private:
 	// replication acknowledgements
 	const int ACK_TIMEOUT = 600000;
 
-	lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::DirectoryListingProto>> *cache;
+	lru::Cache<std::string, hadoop::hdfs::DirectoryListingProto *> *cache;
 };
 
 }  // namespace zkclient
