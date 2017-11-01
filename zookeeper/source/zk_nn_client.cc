@@ -276,7 +276,13 @@ char ZkNnClient::get_node_policy() {
 	return ZkNnClient::policy;
 }
 
+bool ZkNnClient::cache_contains(const std::string &path) {
+    return cache.contains(path);
+}
 
+int ZkNnClient::cache_size() {
+    return cache.currentSize();
+}
 // --------------------------- PROTOCOL CALLS -------------------------------
 
 void ZkNnClient::read_file_znode(FileZNode &znode_data,
@@ -1249,45 +1255,45 @@ void ZkNnClient::get_content(GetContentSummaryRequestProto &req,
 }
 
 void ZkNnClient::set_file_info_content(ContentSummaryProto *status,
-									   const std::string &path,
-									   FileZNode &znode_data) {
-	// get the filetype, since we do not want to serialize an enum
-	int error_code = 0;
-	if (znode_data.filetype == IS_FILE) {
-		int num_file = 0;
-		int num_dir = 0;
-		std::vector<std::string> children;
-		if (!zk->get_children(ZookeeperBlocksPath(path), children, error_code)) {
-			LOG(FATAL) << "Failed to get children for " << ZookeeperBlocksPath(path);
-		} else {
-			for (auto &child : children) {
-				auto child_path = util::concat_path(path, child);
-				FileZNode child_data;
-				read_file_znode(child_data, child_path);
-				if (znode_data.filetype == IS_FILE) {
-					num_file += 1;
-				} else {
-					num_dir += 1;
-				}
-			}
-		}
+                                       const std::string &path,
+                                       FileZNode &znode_data) {
+  // get the filetype, since we do not want to serialize an enum
+  int error_code = 0;
+  if (znode_data.filetype == IS_DIR) {
+    int num_file = 0;
+    int num_dir = 0;
+    std::vector<std::string> children;
+    if (!zk->get_children(ZookeeperBlocksPath(path), children, error_code)) {
+      LOG(FATAL) << "Failed to get children for " << ZookeeperBlocksPath(path);
+    } else {
+      for (auto &child : children) {
+        auto child_path = util::concat_path(path, child);
+        FileZNode child_data;
+        read_file_znode(child_data, child_path);
+        if (child_data.filetype == IS_FILE) {
+          num_file += 1;
+        } else {
+          num_dir += 1;
+        }
+      }
+    }
 
-		status->set_filecount(num_file);
-		status->set_directorycount(num_dir);
-	} else {
-		status->set_filecount(1);
-		status->set_directorycount(0);
-	}
+    status->set_filecount(num_file);
+    status->set_directorycount(num_dir);
+  } else {
+    status->set_filecount(1);
+    status->set_directorycount(0);
+  }
 
 
-	// status->set_filetype(filetype);
-	// status->set_path(path);
-	status->set_length(znode_data.length);
-	status->set_quota(1);
-	status->set_spaceconsumed(1);
-	status->set_spacequota(100000);
+  // status->set_filetype(filetype);
+  // status->set_path(path);
+  status->set_length(znode_data.length);
+  status->set_quota(1);
+  status->set_spaceconsumed(1);
+  status->set_spacequota(100000);
 
-	LOG(INFO) << "Successfully set the file info ";
+  LOG(INFO) << "Successfully set the file info ";
 }
 
 void ZkNnClient::set_file_info(HdfsFileStatusProto *status,

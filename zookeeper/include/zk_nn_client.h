@@ -264,6 +264,10 @@ public:
 	 */
 	void read_file_znode(FileZNode &znode_data, const std::string &path);
 
+    bool cache_contains(const std::string &path);
+
+    int cache_size();
+
 private:
 	/**
 	 * Given a vector of DN IDs, sorts them from fewest to most number of transmits
