@@ -277,11 +277,11 @@ char ZkNnClient::get_node_policy() {
 }
 
 bool ZkNnClient::cache_contains(const std::string &path) {
-    return cache.contains(path);
+    return cache->contains(path);
 }
 
 int ZkNnClient::cache_size() {
-    return cache.currentSize();
+    return cache->currentSize();
 }
 // --------------------------- PROTOCOL CALLS -------------------------------
 
