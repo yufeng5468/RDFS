@@ -52,9 +52,9 @@ struct TargetDN {
 	uint64_t free_bytes;    // free space on disk
 	uint32_t num_xmits;        // current number of xmits
 
-	TargetDN(std::string id, int bytes, int xmits, char policy) : dn_id(id),
+	TargetDN(std::string id, int bytes, int xmits, char policy) : policy(policy),
+																  dn_id(id),
 																  free_bytes(bytes),
-																  policy(policy),
 																  num_xmits(xmits) {
 	}
 
@@ -155,8 +155,8 @@ public:
 		MultiOpFailed
 	};
 
-	explicit ZkNnClient(std::string zkIpAndAddress) : cache(),
-													  ZkClientCommon(zkIpAndAddress) {
+	explicit ZkNnClient(std::string zkIpAndAddress) : ZkClientCommon(zkIpAndAddress),
+			cache(new lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::DirectoryListingProto>>(64, 10)) {
 		mkdir_helper("/", false);
 	};
 
@@ -167,8 +167,8 @@ public:
 	 * @param zk_in shared pointer to a ZKWrapper
 	 * @return ZkNnClient
 	 */
-	explicit ZkNnClient(std::shared_ptr<ZKWrapper> zk_in) : cache(),
-															ZkClientCommon(zk_in) {
+	explicit ZkNnClient(std::shared_ptr<ZKWrapper> zk_in) : ZkClientCommon(zk_in),
+			cache(new lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::DirectoryListingProto>>(64, 10)) {
 		mkdir_helper("/", false);
 	};
 
@@ -404,7 +404,7 @@ private:
 	// replication acknowledgements
 	const int ACK_TIMEOUT = 600000;
 
-	lru::Cache<std::string, hadoop::hdfs::DirectoryListingProto *> *cache;
+	lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::DirectoryListingProto>> *cache;
 };
 
 }  // namespace zkclient
