@@ -789,8 +789,8 @@ ZkNnClient::DeleteResponse ZkNnClient::destroy(DeleteRequestProto &request,
 /**
  * Create a new file entry in the namespace.
  *
- * This will create an empty file specified by the source path, a full path originated at the root.
- *
+ * This will create an empty file specified by the source path, a full path
+ * originated at the root.
  */
 ZkNnClient::CreateResponse ZkNnClient::create_file(
         CreateRequestProto &request,

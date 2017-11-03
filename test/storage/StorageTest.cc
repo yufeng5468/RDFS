@@ -15,6 +15,7 @@ INITIALIZE_EASYLOGGINGPP
 using asio::ip::tcp;
 using client_namenode_translator::ClientNamenodeTranslator;
 using RDFSTestUtils::initializeDatanodes;
+using RDFSTestUtils::getCreateRequestProto;
 
 static const int NUM_DATANODES = 3;
 
@@ -97,6 +98,21 @@ TEST_F(StorageTest, testExample) {
                                                   metrics.usedSpaceFraction();
   system(("hdfs dfs -fs hdfs://localhost:" + std::to_string(port) + " -rm /f")
              .c_str());
+}
+
+TEST_F(StorageTest, testECCreateProto) {
+  asio::io_service io_service;
+  RPCServer namenodeServer = nn_translator->getRPCServer();
+  std::thread(&RPCServer::serve, namenodeServer, std::ref(io_service))
+      .detach();
+  sleep(3);
+
+  hadoop::hdfs::CreateRequestProto create_req;
+  hadoop::hdfs::CreateResponseProto create_resp;
+
+  create_req = getCreateRequestProto("/f");
+  create_req.set_ecpolicyname();
+
 }
 }  // namespace
 
