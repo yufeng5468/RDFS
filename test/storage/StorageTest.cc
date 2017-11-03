@@ -112,7 +112,7 @@ TEST_F(StorageTest, testECCreateProto) {
 
   create_req = getCreateRequestProto("/f");
   create_req.set_ecpolicyname();
-
+  // todo
 }
 }  // namespace
 
