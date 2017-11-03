@@ -1007,7 +1007,10 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
 		// Get cached
         LOG(INFO) << "Found path " << src << " listing in cache";
 		auto listing = cache->get(src);
+
 		res.set_allocated_dirlist(listing.get());
+        hadoop::hdfs::DirectoryListingProto dir_listing = res.dirlist();
+        LOG(INFO) << "Found listing " << dir_listing.partiallisting_size();
 	} else {
         LOG(INFO) << "Did not find path " << src << " listing in cache";
 		// From 2016:
@@ -1021,8 +1024,6 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
 		const int start_after = req.startafter();
 		const bool need_location = req.needlocation();
 		DirectoryListingProto *raw_listing = res.mutable_dirlist();
-		std::shared_ptr<DirectoryListingProto> listing(raw_listing);
-		
 
 		// Set watcher on root and examine node
 		if (zk->wexists(ZookeeperFilePath(src), exists, watcher_listing, this, error_code) && exists) {
@@ -1033,7 +1034,7 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
 
 			if (znode_data.filetype == IS_FILE) {
 				// Update listing with file info
-				HdfsFileStatusProto *status = listing->add_partiallisting();
+				HdfsFileStatusProto *status = raw_listing->add_partiallisting();
 				set_file_info(status, src, znode_data);
 				if (need_location) {
 					LocatedBlocksProto *blocks = status->mutable_locations();
@@ -1052,7 +1053,7 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
 						FileZNode child_data;
 						read_file_znode(child_data, child_path);
 
-						HdfsFileStatusProto *status = listing->add_partiallisting();
+						HdfsFileStatusProto *status = raw_listing->add_partiallisting();
 						set_file_info(status, child_path, child_data);
 
 						if (need_location) {
@@ -1062,8 +1063,9 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
 					}
 				}
 			}
-			listing->set_remainingentries(0);
+			raw_listing->set_remainingentries(0);
 
+            std::shared_ptr<DirectoryListingProto> listing = std::make_shared<DirectoryListingProto> (*raw_listing);
 			cache->insert(src, listing);
             LOG(INFO) << "Adding path to cache " << src;
 		} else {
