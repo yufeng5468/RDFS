@@ -111,8 +111,9 @@ TEST_F(StorageTest, testECCreateProto) {
   hadoop::hdfs::CreateResponseProto create_resp;
 
   create_req = getCreateRequestProto("/f");
-  create_req.set_ecpolicyname();
-  // todo
+  create_req.set_ecpolicyname("ec");
+
+
 }
 }  // namespace
 
