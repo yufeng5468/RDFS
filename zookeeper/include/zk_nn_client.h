@@ -156,7 +156,7 @@ public:
 	};
 
 	explicit ZkNnClient(std::string zkIpAndAddress) : ZkClientCommon(zkIpAndAddress),
-			cache(new lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::DirectoryListingProto>>(64, 10)) {
+			cache(new lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::GetListingResponseProto>>(64, 10)) {
 		mkdir_helper("/", false);
 	};
 
@@ -168,7 +168,7 @@ public:
 	 * @return ZkNnClient
 	 */
 	explicit ZkNnClient(std::shared_ptr<ZKWrapper> zk_in) : ZkClientCommon(zk_in),
-			cache(new lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::DirectoryListingProto>>(64, 10)) {
+			cache(new lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::GetListingResponseProto>>(64, 10)) {
 		mkdir_helper("/", false);
 	};
 
@@ -404,7 +404,7 @@ private:
 	// replication acknowledgements
 	const int ACK_TIMEOUT = 600000;
 
-	lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::DirectoryListingProto>> *cache;
+	lru::Cache<std::string, std::shared_ptr<hadoop::hdfs::GetListingResponseProto>> *cache;
 };
 
 }  // namespace zkclient
