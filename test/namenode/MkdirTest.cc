@@ -78,30 +78,30 @@ TEST_F(NamenodeTest, mkdirPerformance) {
 //  el::Loggers::setVerboseLevel(9);
 
   std::string root_src = "/testing";
-  std::vector<int> warmup_depths = {256};
-  std::vector<int> warmup_iters = {3};
-  std::vector<int> depths = {50};
-  std::vector<int> num_iters = {3};
+  std::vector<int> warmup_depths = {128};
+  std::vector<int> warmup_iters = {5};
+  std::vector<int> depths = {25};
+  std::vector<int> num_iters = {10};
 
   // Warmup
-//  for (auto d : warmup_depths) {
-//    for (auto i : warmup_iters) {
-//      for (int j = 0; j < i; j++) {
-//        std::string curr_src = root_src;
-//        for (int k = 0; k < d; k++) {
-//          curr_src += "/warmup_mkdir_depth" + std::to_string(d) +
-//                      "_num" + std::to_string(i) + "_iter" + std::to_string(j);
-//        }
-//        hadoop::hdfs::MkdirsRequestProto mkdir_req;
-//        hadoop::hdfs::MkdirsResponseProto mkdir_resp;
-//        mkdir_req.set_createparent(true);
-//        mkdir_req.set_src(curr_src);
-//        ASSERT_EQ(client->mkdir(mkdir_req, mkdir_resp),
-//                  zkclient::ZkNnClient::MkdirResponse::Ok);
-//        ASSERT_TRUE(mkdir_resp.result());
-//      }
-//    }
-//  }
+  for (auto d : warmup_depths) {
+    for (auto i : warmup_iters) {
+      for (int j = 0; j < i; j++) {
+        std::string curr_src = root_src;
+        for (int k = 0; k < d; k++) {
+          curr_src += "/warmup_mkdir_depth" + std::to_string(d) +
+                      "_num" + std::to_string(i) + "_iter" + std::to_string(j);
+        }
+        hadoop::hdfs::MkdirsRequestProto mkdir_req;
+        hadoop::hdfs::MkdirsResponseProto mkdir_resp;
+        mkdir_req.set_createparent(true);
+        mkdir_req.set_src(curr_src);
+        ASSERT_EQ(client->mkdir(mkdir_req, mkdir_resp),
+                  zkclient::ZkNnClient::MkdirResponse::Ok);
+        ASSERT_TRUE(mkdir_resp.result());
+      }
+    }
+  }
 
   std::cerr << "Warmup done\n";
 
