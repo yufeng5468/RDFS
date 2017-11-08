@@ -16,6 +16,17 @@
 #include <ConfigReader.h>
 #include "util.h"
 
+#define nn_timing_start() \
+        auto start = std::chrono::steady_clock::now();
+
+#define nn_timing_checkpoint(CKPT_NAME) \
+        timing_ckpts.push_back(std::make_pair(std::string{CKPT_NAME}, std::chrono::steady_clock::now()));
+
+#define nn_timing_end() \
+        auto finish = std::chrono::steady_clock::now(); \
+        std::chrono::duration<double, std::milli> duration = finish - start; \
+        std::cerr << __func__ << " took " << duration.count() << "ms.\n";
+
 namespace zkclient {
 
 

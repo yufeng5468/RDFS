@@ -13,6 +13,15 @@
 #include <cstring>
 #include <map>
 
+#define zk_timing_start() \
+        auto start = std::chrono::steady_clock::now();
+
+#define zk_timing_end(ZOO_OP) \
+        auto finish = std::chrono::steady_clock::now(); \
+        std::chrono::duration<double, std::milli> time = finish - start; \
+        const_cast<ZKWrapper *>(this)->zk_time += time.count(); \
+        std::cerr << __func__ << ": [" << ZOO_OP << "] took " << time.count() << "ms. Cumulative zk time is " << zk_time << ".\n";
+
 enum ZK_ERRORS {
   OK = 0,
   PATH_NOT_FOUND = -1
@@ -339,7 +348,9 @@ class ZKWrapper {
    * @param synchronous Whether this operation is blocking
    * @return true on success
    */
-  bool flush(const std::string &full_path, bool synchronous = true) const;
+  bool flush(const std::string &full_path, bool synchronous = false) const;
+
+  void reset_zk_time();
 
   void close();
 
@@ -353,6 +364,7 @@ class ZKWrapper {
 
  private:
   zhandle_t *zh;
+  double zk_time;
 
   friend void watcher(zhandle_t *zzh, int type, int state, const char *path,
                       void *watcherCtx);
