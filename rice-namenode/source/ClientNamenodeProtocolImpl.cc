@@ -130,9 +130,12 @@ std::string ClientNamenodeTranslator::mkdir(std::string input) {
   req.ParseFromString(input);
   logMessage(&req, "Mkdir ");
   MkdirsResponseProto res;
+  nn_timing_start();
   if (zk->mkdir(req, res) == zkclient::ZkNnClient::MkdirResponse::Ok) {
+    nn_timing_end();
     return Serialize(res);
   } else {
+    nn_timing_end();
     throw GetErrorRPCHeader("Could not mkdir", "");
   }
 }
