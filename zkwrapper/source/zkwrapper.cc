@@ -616,7 +616,7 @@ bool ZKWrapper::flush(const std::string &full_path, bool synchronous) const {
   } else {
     auto no_op = [&](int rc, const char *value, const void *data) {};
     auto rv = zoo_async(zh, full_path.c_str(), no_op, nullptr);
-    auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
+    auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
     auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
     std::cerr << "flush issued at " << epoch.count() << "\n";
     zk_timing_end("flush");

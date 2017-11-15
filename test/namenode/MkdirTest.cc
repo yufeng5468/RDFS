@@ -96,7 +96,7 @@ TEST_F(NamenodeTest, mkdirProfHelper) {
     while (!client->file_exists(curr_src)) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
-    auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
+    auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
     auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
     std::cerr << "Polling ended at " << epoch.count() << "\n";
 }
