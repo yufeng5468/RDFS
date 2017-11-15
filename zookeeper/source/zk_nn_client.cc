@@ -506,7 +506,7 @@ bool ZkNnClient::create_file_znode(const std::string &path,
                                   FileZNode *znode_data) {
   int error_code;
   if (!file_exists(path)) {
-    LOG(ERROR) << "Creating file znode at " << path;
+//    LOG(ERROR) << "Creating file znode at " << path;
     {
       LOG(INFO) << znode_data->replication;
       LOG(INFO) << znode_data->owner;

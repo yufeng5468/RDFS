@@ -2,6 +2,7 @@
 
 #include <limits>
 #include "NameNodeTest.h"
+#include <thread>
 
 
 TEST_F(NamenodeTest, mkdirDepth1) {
@@ -74,14 +75,40 @@ TEST_F(NamenodeTest, mkdirExistentFile) {
     ASSERT_FALSE(mkdir_resp.result());
 }
 
+TEST_F(NamenodeTest, mkdirProfHelper) {
+    std::string root_src = "/testing";
+    std::vector<int> depths = {1};
+    std::vector<int> num_iters = {500};
+
+    std::string curr_src;
+    for (auto d : depths) {
+        for (auto i : num_iters) {
+            for (int j = 0; j < i; j++) {
+                curr_src = root_src;
+                for (int k = 0; k < d; k++) {
+                    curr_src += "/test_mkdir_depth" + std::to_string(d) +
+                                "_num" + std::to_string(i) + "_iter" + std::to_string(j);
+                }
+            }
+        }
+    }
+    std::cerr << "Pollling for " << curr_src << "\n";
+    while (!client->file_exists(curr_src)) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
+    auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+    std::cerr << "Polling ended at " << epoch.count() << "\n";
+}
+
 TEST_F(NamenodeTest, mkdirPerformance) {
 //  el::Loggers::setVerboseLevel(9);
 
   std::string root_src = "/testing";
   std::vector<int> warmup_depths = {128};
   std::vector<int> warmup_iters = {5};
-  std::vector<int> depths = {25};
-  std::vector<int> num_iters = {10};
+  std::vector<int> depths = {1};
+  std::vector<int> num_iters = {500};
 
   // Warmup
   for (auto d : warmup_depths) {
@@ -126,6 +153,9 @@ TEST_F(NamenodeTest, mkdirPerformance) {
       }
     }
   }
+  auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
+  auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+  std::cerr << "Master finished at " << epoch.count() << "\n";
 
 //  std::cerr << "Round 2\n";
 //
