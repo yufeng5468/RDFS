@@ -153,9 +153,6 @@ TEST_F(NamenodeTest, mkdirPerformance) {
       }
     }
   }
-  auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now());
-  auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
-  std::cerr << "Master finished at " << epoch.count() << "\n";
 
 //  std::cerr << "Round 2\n";
 //
