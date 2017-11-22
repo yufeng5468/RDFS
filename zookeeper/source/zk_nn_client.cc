@@ -1345,7 +1345,10 @@ ZkNnClient::MkdirResponse ZkNnClient::mkdir(MkdirsRequestProto &request,
                                             MkdirsResponseProto &response) {
   const std::string &path = request.src();
   bool create_parent = request.createparent();
+  this->zk->reset_zk_time();
+  nn_timing_start();
   auto rv = mkdir_helper(path, create_parent);
+  nn_timing_end();
   response.set_result(rv == MkdirResponse::Ok);
   return rv;
 }
@@ -1357,9 +1360,12 @@ ZkNnClient::MkdirResponse ZkNnClient::mkdir(MkdirsRequestProto &request,
 ZkNnClient::MkdirResponse ZkNnClient::mkdir_helper(const std::string &path,
                            bool create_parent) {
   LOG(INFO) << "[mkdir_helper] mkdir_helper called with input " << path;
+  nn_timing_start();
+  auto timing_ckpts = std::vector<std::pair<std::string, decltype(std::chrono::steady_clock::now())>>{};
   if (create_parent) {
     std::vector<std::string> split_path;
     boost::split(split_path, path, boost::is_any_of("/"));
+    nn_timing_checkpoint("split()");
     bool not_exist = false;
     std::string unroll;
     std::string p_path;
@@ -1369,6 +1375,7 @@ ZkNnClient::MkdirResponse ZkNnClient::mkdir_helper(const std::string &path,
       p_path += "/" + split_path[i];
       LOG(INFO) << "[mkdir_helper] " << p_path;
       if (!file_exists(p_path)) {
+        nn_timing_checkpoint("!file_exists");
         // keep track of the path where we start creating directories
         if (!not_exist) {
           unroll = p_path;
@@ -1376,18 +1383,38 @@ ZkNnClient::MkdirResponse ZkNnClient::mkdir_helper(const std::string &path,
         not_exist = true;
         FileZNode znode_data;
         set_mkdir_znode(&znode_data);
+        nn_timing_checkpoint("set_mkdir_znode");
         if (!create_file_znode(p_path, &znode_data)) {
           // TODO(2016) unroll the created directories
+          nn_timing_end();
+          for (auto &ckpt : timing_ckpts) {
+            std::chrono::duration<double, std::milli> ckpt_time = ckpt.second - start;
+            std::cerr << "checkpoint " << ckpt.first << " cumulative " << ckpt_time.count() << "ms (" << ckpt_time.count() / duration.count() * 100 << "% of total duration)\n";
+          }
+          std::cerr << "Returning FailedZnodeCreation in the middle\n";
           return MkdirResponse::FailedZnodeCreation;
         }
+        nn_timing_checkpoint("create_file_znode");
       }
     }
   } else {
     FileZNode znode_data;
     set_mkdir_znode(&znode_data);
-    return create_file_znode(path, &znode_data) ?
-         MkdirResponse::Ok : MkdirResponse::FailedZnodeCreation;
+    auto rv = create_file_znode(path, &znode_data);
+    nn_timing_end();
+    for (auto &ckpt : timing_ckpts) {
+      std::chrono::duration<double, std::milli> ckpt_time = ckpt.second - start;
+      std::cerr << "checkpoint " << ckpt.first << " cumulative " << ckpt_time.count() << "ms (" << ckpt_time.count() / duration.count() * 100 << "% of total duration)\n";
+    }
+    std::cerr << "Returning FailedZnodeCreation in !create_parent\n";
+    return rv ? MkdirResponse::Ok : MkdirResponse::FailedZnodeCreation;
   }
+  nn_timing_end();
+  for (auto &ckpt : timing_ckpts) {
+    std::chrono::duration<double, std::milli> ckpt_time = ckpt.second - start;
+    std::cerr << "checkpoint " << ckpt.first << " cumulative " << ckpt_time.count() << "ms (" << ckpt_time.count() / duration.count() * 100 << "% of total duration)\n";
+  }
+  std::cerr << "Returning Ok\n";
   return MkdirResponse::Ok;
 }
 
