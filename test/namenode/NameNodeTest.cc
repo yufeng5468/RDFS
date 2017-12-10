@@ -384,11 +384,11 @@ int main(int argc, char **argv) {
     el::Loggers::addFlag(el::LoggingFlag::ColoredTerminalOutput);
 
     // Start up zookeeper
-    system("sudo /home/vagrant/zookeeper/bin/zkServer.sh stop");
-    system("sudo /home/vagrant/zookeeper/bin/zkServer.sh start");
+//    system("sudo /home/vagrant/zookeeper/bin/zkServer.sh stop");
+//    system("sudo /home/vagrant/zookeeper/bin/zkServer.sh start");
 
     // In case testing files were not previously deleted.
-    system("sudo /home/vagrant/zookeeper/bin/zkCli.sh rmr /testing");
+    system("/home/comp413/zookeeper/bin/zkCli.sh rmr /testing");
     sleep(10);
 
     // Initialize and run the tests
@@ -397,7 +397,7 @@ int main(int argc, char **argv) {
     // NOTE: You'll need to scroll up a bit to see the test results
 
     // Remove test files and shutdown zookeeper
-    system("sudo /home/vagrant/zookeeper/bin/zkCli.sh rmr /testing");
-    system("sudo /home/vagrant/zookeeper/bin/zkServer.sh stop");
+    system("/home/comp413/zookeeper/bin/zkCli.sh rmr /testing");
+//    system("sudo /home/vagrant/zookeeper/bin/zkServer.sh stop");
     return res;
 }
