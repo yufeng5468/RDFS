@@ -172,7 +172,7 @@ TEST_F(NamenodeTest, creationPerformance) {
     for (int f : num_files) {
         for (int d : num_dirs) {
             std::cerr << "create num_files " << std::to_string(f) << " num_dirs " << std::to_string(d) << "\n";
-            files = createTestString(f, d, 1);
+            files = createTestString(f, d, 2);
             for (std::string fn : files) {
                 create_req = getCreateRequestProto(fn);
                 create_req.set_createparent(true);
@@ -191,7 +191,7 @@ TEST_F(NamenodeTest, creationPerformance) {
     for (int f : num_files) {
         for (int d : num_dirs) {
             std::cerr << "create num_files " << std::to_string(f) << " num_dirs " << std::to_string(d) << "\n";
-            files = createTestString(f, d, 1);
+            files = createTestString(f, d, 3);
             for (std::string fn : files) {
                 create_req = getCreateRequestProto(fn);
                 create_req.set_createparent(true);
