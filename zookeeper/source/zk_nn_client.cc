@@ -489,33 +489,16 @@ ZkNnClient::GetFileInfoResponse ZkNnClient::get_info(
     FileZNode znode_data;
     read_file_znode(znode_data, path);
 
-<<<<<<< ours
-=======
-    // Check access
-    if (!checkAccess(client_name, znode_data)) {
-      LOG(ERROR) << "[get_info] Access denied to path " << path;
-      nn_timing_end();
-      return GetFileInfoResponse::FileAccessRestricted;
-    }
-
->>>>>>> theirs
     // set the file status in the get file info response res
     HdfsFileStatusProto *status = res.mutable_fs();
 
     set_file_info(status, path, znode_data);
-<<<<<<< ours
-    LOG(INFO) << "Got info for file ";
-    return GetFileInfoResponse::Ok;
-  } else {
-    LOG(INFO) << "No file to get info for";
-=======
     LOG(INFO) << "[get_info] Got info for file ";
     nn_timing_end();
     return GetFileInfoResponse::Ok;
   } else {
     LOG(INFO) << "[get_info] No file to get info for";
     nn_timing_end();
->>>>>>> theirs
     return GetFileInfoResponse::FileDoesNotExist;
   }
 }
@@ -816,7 +799,6 @@ ZkNnClient::DeleteResponse ZkNnClient::destroy(DeleteRequestProto &request,
 ZkNnClient::CreateResponse ZkNnClient::create_file(
         CreateRequestProto &request,
         CreateResponseProto &response) {
-<<<<<<< ours
     const std::string &path = request.src();
     LOG(ERROR) << "Trying to create file " << path;
     const std::string &owner = request.clientname();
@@ -825,9 +807,12 @@ ZkNnClient::CreateResponse ZkNnClient::create_file(
     std::uint32_t replication = request.replication();
     std::uint32_t createflag = request.createflag();
 
+    this->zk->reset_zk_time();
+    nn_timing_start();
     if (file_exists(path)) {
         // TODO(2016) solve this issue of overwriting files
         LOG(ERROR) << "File already exists";
+        nn_timing_end();
         return CreateResponse::FileAlreadyExists;
     }
 
@@ -845,46 +830,11 @@ ZkNnClient::CreateResponse ZkNnClient::create_file(
         if (mkdir_helper(directory_paths, true) !=
             ZkNnClient::MkdirResponse::Ok) {
             LOG(ERROR) << "Failed to Mkdir for " << directory_paths;
+            nn_timing_end();
             return CreateResponse::FailedMkdir;
         }
-=======
-  const std::string &path = request.src();
-  LOG(INFO) << "[create_file] Trying to create file " << path;
-  const std::string &owner = request.clientname();
-  bool create_parent = request.createparent();
-  std::uint64_t blocksize = request.blocksize();
-  std::uint32_t replication = request.replication();
-  std::uint32_t createflag = request.createflag();
-  const std::string &inputECPolicyName = request.ecpolicyname();
-
-  this->zk->reset_zk_time();
-  nn_timing_start();
-  if (file_exists(path)) {
-    // TODO(2016) solve this issue of overwriting files
-    LOG(ERROR) << "[create_file] File already exists";
-    nn_timing_end();
-    return CreateResponse::FileAlreadyExists;
-  }
-
-  // If we need to create directories, do so
-  if (create_parent) {
-    LOG(INFO) << "[create_file] Creating directories to store ";
-    std::string directory_paths = "";
-    std::vector<std::string> split_path;
-    boost::split(split_path, path, boost::is_any_of("/"));
-    for (int i = 1; i < split_path.size() - 1; i++) {
-      directory_paths += ("/" + split_path[i]);
-    }
-    // try and make all the parents
-    if (mkdir_helper(directory_paths, true) !=
-        ZkNnClient::MkdirResponse::Ok) {
-      LOG(ERROR) << "[create_file] Failed to Mkdir for " << directory_paths;
-      nn_timing_end();
-      return CreateResponse::FailedMkdir;
->>>>>>> theirs
     }
 
-<<<<<<< ours
     // Now create the actual file which will hold blocks
     FileZNode znode_data;
     znode_data.length = 0;
@@ -899,48 +849,16 @@ ZkNnClient::CreateResponse ZkNnClient::create_file(
     znode_data.filetype = IS_FILE;
 
     // if we failed, then do not set any status
-    if (!create_file_znode(path, &znode_data))
+    if (!create_file_znode(path, &znode_data)) {
+        nn_timing_end();
         return CreateResponse::FailedCreateZnode;
+    }
 
     HdfsFileStatusProto *status = response.mutable_fs();
     set_file_info(status, path, znode_data);
 
-    return CreateResponse::Ok;
-=======
-  // Now create the actual file which will hold blocks
-  FileZNode znode_data;
-  znode_data.length = 0;
-  znode_data.under_construction = FileStatus::UnderConstruction;
-  uint64_t mslong = current_time_ms();
-  znode_data.access_time = mslong;
-  znode_data.modification_time = mslong;
-  snprintf(znode_data.owner, strlen(znode_data.owner), owner.c_str());
-  snprintf(znode_data.group, strlen(znode_data.group), owner.c_str());
-  znode_data.replication = replication;
-  znode_data.blocksize = blocksize;
-  znode_data.filetype = IS_FILE;
-  // Initialize permissions for file with owner and admin.
-  snprintf(znode_data.permissions[0], MAX_USERNAME_LEN, owner.c_str());
-  znode_data.perm_length = 1;
-
-  // in the case of EC, this inputECPolicyName is empty.
-  if (inputECPolicyName.empty()) {
-    znode_data.isEC = false;
-  } else {
-    znode_data.isEC = true;
-  }
-
-  // if we failed, then do not set any status
-  if (!create_file_znode(path, &znode_data)) {
     nn_timing_end();
-    return CreateResponse::FailedCreateZnode;
-  }
-
-  HdfsFileStatusProto *status = response.mutable_fs();
-  set_file_info(status, path, znode_data);
-  nn_timing_end();
-  return CreateResponse::Ok;
->>>>>>> theirs
+    return CreateResponse::Ok;
 }
 
 /**
@@ -954,17 +872,6 @@ ZkNnClient::RenameResponse ZkNnClient::rename(RenameRequestProto& req,
   nn_timing_start();
   FileZNode znode_data;
   read_file_znode(znode_data, file_path);
-<<<<<<< ours
-=======
-
-  // Check access
-  if (!checkAccess(client_name, znode_data)) {
-    LOG(ERROR) << "[rename] Access denied to path " << file_path;
-    nn_timing_end();
-    return RenameResponse::FileAccessRestricted;
-  }
-
->>>>>>> theirs
   if (!file_exists(file_path)) {
     LOG(ERROR) << "Requested rename source: " << file_path << " does not exist";
     res.set_result(false);
@@ -1060,15 +967,9 @@ ZkNnClient::MkdirResponse ZkNnClient::mkdir(MkdirsRequestProto &request,
  * them if necessary.
  */
 ZkNnClient::MkdirResponse ZkNnClient::mkdir_helper(const std::string &path,
-<<<<<<< ours
-                                                   bool create_parent) {
-  LOG(ERROR) << "mkdir_helper called with input " << path;
-=======
                            bool create_parent) {
   LOG(INFO) << "[mkdir_helper] mkdir_helper called with input " << path;
   nn_timing_start();
-//  auto timing_ckpts = std::vector<std::pair<std::string, decltype(std::chrono::steady_clock::now())>>{};
->>>>>>> theirs
   if (create_parent) {
     std::vector<std::string> split_path;
     boost::split(split_path, path, boost::is_any_of("/"));
@@ -1101,38 +1002,16 @@ ZkNnClient::MkdirResponse ZkNnClient::mkdir_helper(const std::string &path,
 //          std::cerr << "Returning FailedZnodeCreation in the middle\n";
           return MkdirResponse::FailedZnodeCreation;
         }
-<<<<<<< ours
-      } else {
-        LOG(INFO) << "mkdir_helper is trying to create";
-=======
-//        nn_timing_checkpoint("create_file_znode");
->>>>>>> theirs
       }
     }
   } else {
     FileZNode znode_data;
     set_mkdir_znode(&znode_data);
-<<<<<<< ours
-    return create_file_znode(path, &znode_data) ?
-           MkdirResponse::Ok : MkdirResponse::FailedZnodeCreation;
-  }
-=======
     auto rv = create_file_znode(path, &znode_data);
     nn_timing_end();
-//    for (auto &ckpt : timing_ckpts) {
-//      std::chrono::duration<double, std::milli> ckpt_time = ckpt.second - start;
-//      std::cerr << "checkpoint " << ckpt.first << " cumulative " << ckpt_time.count() << "ms (" << ckpt_time.count() / duration.count() * 100 << "% of total duration)\n";
-//    }
-//    std::cerr << "Returning FailedZnodeCreation in !create_parent\n";
     return rv ? MkdirResponse::Ok : MkdirResponse::FailedZnodeCreation;
   }
   nn_timing_end();
-//  for (auto &ckpt : timing_ckpts) {
-//    std::chrono::duration<double, std::milli> ckpt_time = ckpt.second - start;
-//    std::cerr << "checkpoint " << ckpt.first << " cumulative " << ckpt_time.count() << "ms (" << ckpt_time.count() / duration.count() * 100 << "% of total duration)\n";
-//  }
-//  std::cerr << "Returning Ok\n";
->>>>>>> theirs
   return MkdirResponse::Ok;
 }
 
@@ -1141,54 +1020,12 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
   int error_code;
 
   const std::string &src = req.src();
-<<<<<<< ours
     const int start_after = req.startafter();
     const bool need_location = req.needlocation();
-=======
-
-  this->zk->reset_zk_time();
-  nn_timing_start();
-
-  if (cache->contains(src)) {
-    // Get cached
-        LOG(INFO) << "[get_listing] Found path " << src << " listing in cache";
-    auto listing = cache->get(src);
-    auto l_copy = new DirectoryListingProto(*listing.get()->mutable_dirlist());
-    res.set_allocated_dirlist(l_copy);
-  } else {
-        LOG(INFO) << "[get_listing] Did not find path " << src
-                  << " listing in cache";
-    // From 2016:
-    // if src is a file then just return that file with remaining = 0
-    // otherwise return first 1000 files in src dir starting at start_after
-    // and set remaining to the number left after that first 1000
-
-    bool exists;
-    int error_code;
-
-    const int start_after = req.startafter();
-    const bool need_location = req.needlocation();
-    DirectoryListingProto *raw_listing = res.mutable_dirlist();
-
-    // Set watcher on root and examine node
-    if (zk->wexists(ZookeeperFilePath(src),
-                    exists,
-                    watcher_listing,
-                    this,
-                    error_code) && exists) {
-      // Read node data
-      FileZNode znode_data;
-      read_file_znode(znode_data, src);
-
-      // Check access
-      if (!checkAccess(client_name, znode_data)) {
-        LOG(ERROR) << "[get_listing] Access denied to path " << src;
-        nn_timing_end();
-        return ListingResponse::FileAccessRestricted;
-      }
->>>>>>> theirs
 
   DirectoryListingProto *listing = res.mutable_dirlist();
+    this->zk->reset_zk_time();
+    nn_timing_start();
 
   // if src is a file then just return that file with remaining = 0
   // otherwise return first 1000 files in src dir starting at start_after
@@ -1208,9 +1045,9 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
       std::vector<std::string> children;
       if (!zk->get_children(ZookeeperFilePath(src), children, error_code)) {
         LOG(FATAL) << "Failed to get children for " << ZookeeperFilePath(src);
+          nn_timing_end();
         return ListingResponse::FailedChildRetrieval;
       } else {
-<<<<<<< ours
         for (auto &child : children) {
           auto child_path = util::concat_path(src, child);
           FileZNode child_data;
@@ -1221,58 +1058,16 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(GetListingRequestProto &req,
           // LocatedBlocksProto *blocklocation = status->set_location();
           // GetBlockLocationsRequestProto location_req;
           if (need_location) {
-=======
-        // Update listing with directory info
-        std::vector<std::string> children;
-        if (!zk->wget_children(ZookeeperFilePath(src),
-                               children,
-                               watcher_listing,
-                               this,
-                               error_code)) {
-          LOG(FATAL) << "[get_listing] Failed to get children for "
-                     << ZookeeperFilePath(src);
-          nn_timing_end();
-          return ListingResponse::FailedChildRetrieval;
-        } else {
-          for (auto &child : children) {
-            auto child_path = util::concat_path(src, child);
-
-            FileZNode child_data;
-            read_file_znode(child_data, child_path);
-
-            // Check access
-            if (!checkAccess(client_name, child_data)) {
-              LOG(ERROR) << "[get_listing] Access denied to path "
-                         << child_path;
-              nn_timing_end();
-              return ListingResponse::FileAccessRestricted;
-            }
-
-            HdfsFileStatusProto *status = raw_listing->add_partiallisting();
-            set_file_info(status, child_path, child_data);
-
-            if (need_location) {
->>>>>>> theirs
               LocatedBlocksProto *blocks = status->mutable_locations();
               get_block_locations(child_path, 0, child_data.length, blocks);
           }
         }
       }
-<<<<<<< ours
-=======
-      raw_listing->set_remainingentries(0);
-      auto listing = std::make_shared<GetListingResponseProto> (res);
-      cache->insert(src, listing);
-      LOG(INFO) << "[get_listing] Adding path to cache " << src;
-    } else {
-      LOG(ERROR) << "[get_listing] File does not exist with name " << src;
-      nn_timing_end();
-      return ListingResponse::FileDoesNotExist;
->>>>>>> theirs
     }
     listing->set_remainingentries(0);
   } else {
     LOG(ERROR) << "File does not exist with name " << src;
+      nn_timing_end();
     return ListingResponse::FileDoesNotExist;
   }
   nn_timing_end();

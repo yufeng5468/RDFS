@@ -15,7 +15,6 @@
 #include "ClientNamenodeProtocol.pb.h"
 #include <ConfigReader.h>
 #include "util.h"
-#include "LRUCache.h"
 
 #define MAX_USERNAME_LEN 256
 #define nn_timing_start() \
