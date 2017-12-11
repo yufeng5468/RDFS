@@ -1190,9 +1190,12 @@ ZkNnClient::CreateResponse ZkNnClient::create_file(
   std::uint32_t createflag = request.createflag();
   const std::string &inputECPolicyName = request.ecpolicyname();
 
+  this->zk->reset_zk_time();
+  nn_timing_start();
   if (file_exists(path)) {
     // TODO(2016) solve this issue of overwriting files
     LOG(ERROR) << "[create_file] File already exists";
+    nn_timing_end();
     return CreateResponse::FileAlreadyExists;
   }
 
@@ -1209,6 +1212,7 @@ ZkNnClient::CreateResponse ZkNnClient::create_file(
     if (mkdir_helper(directory_paths, true) !=
         ZkNnClient::MkdirResponse::Ok) {
       LOG(ERROR) << "[create_file] Failed to Mkdir for " << directory_paths;
+      nn_timing_end();
       return CreateResponse::FailedMkdir;
     }
   }
@@ -1237,11 +1241,14 @@ ZkNnClient::CreateResponse ZkNnClient::create_file(
   }
 
   // if we failed, then do not set any status
-  if (!create_file_znode(path, &znode_data))
-      return CreateResponse::FailedCreateZnode;
+  if (!create_file_znode(path, &znode_data)) {
+    nn_timing_end();
+    return CreateResponse::FailedCreateZnode;
+  }
 
   HdfsFileStatusProto *status = response.mutable_fs();
   set_file_info(status, path, znode_data);
+  nn_timing_end();
   return CreateResponse::Ok;
 }
 
