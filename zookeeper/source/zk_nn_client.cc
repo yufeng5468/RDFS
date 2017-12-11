@@ -1434,6 +1434,9 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(
 
   const std::string &src = req.src();
 
+  this->zk->reset_zk_time();
+  nn_timing_start();
+
   if (cache->contains(src)) {
     // Get cached
         LOG(INFO) << "[get_listing] Found path " << src << " listing in cache";
@@ -1468,6 +1471,7 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(
       // Check access
       if (!checkAccess(client_name, znode_data)) {
         LOG(ERROR) << "[get_listing] Access denied to path " << src;
+        nn_timing_end();
         return ListingResponse::FileAccessRestricted;
       }
 
@@ -1489,6 +1493,7 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(
                                error_code)) {
           LOG(FATAL) << "[get_listing] Failed to get children for "
                      << ZookeeperFilePath(src);
+          nn_timing_end();
           return ListingResponse::FailedChildRetrieval;
         } else {
           for (auto &child : children) {
@@ -1501,6 +1506,7 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(
             if (!checkAccess(client_name, child_data)) {
               LOG(ERROR) << "[get_listing] Access denied to path "
                          << child_path;
+              nn_timing_end();
               return ListingResponse::FileAccessRestricted;
             }
 
@@ -1520,9 +1526,11 @@ ZkNnClient::ListingResponse ZkNnClient::get_listing(
       LOG(INFO) << "[get_listing] Adding path to cache " << src;
     } else {
       LOG(ERROR) << "[get_listing] File does not exist with name " << src;
+      nn_timing_end();
       return ListingResponse::FileDoesNotExist;
     }
   }
+  nn_timing_end();
   return ListingResponse::Ok;
 }
 

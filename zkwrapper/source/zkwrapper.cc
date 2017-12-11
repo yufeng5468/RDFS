@@ -326,6 +326,7 @@ bool ZKWrapper::get(const std::string &path,
         data = *cached;
 
   } else {
+    zk_timing_start();
     error_code = zoo_wget(zh,
                 prepend_zk_root(path).c_str(),
                 watcher_znode_data,
@@ -333,6 +334,7 @@ bool ZKWrapper::get(const std::string &path,
                 reinterpret_cast<char *>(data.data()),
                 &len,
                 &stat);
+    zk_timing_end("zoo_wget");
         std::shared_ptr<std::vector<std::uint8_t>> data_copy =
                 std::make_shared<std::vector<unsigned char>> (data);
         cache->insert(path, data_copy);
@@ -399,10 +401,12 @@ bool ZKWrapper::wexists(const std::string &path,
             void *watcherCtx,
             int &error_code) const {
   struct Stat stat;
+  zk_timing_start();
   int rc = zoo_wexists(zh,
              prepend_zk_root(path).c_str(),
              watch,
              watcherCtx, &stat);
+  zk_timing_end("wexists");
   error_code = rc;
   if (rc == ZOK) {
     exist = true;
@@ -520,11 +524,13 @@ bool ZKWrapper::wget_children(const std::string &path,
                 int &error_code) const {
   struct String_vector stvector;
   struct String_vector *vector = &stvector;
+  zk_timing_start();
   error_code = zoo_wget_children(zh,
                    prepend_zk_root(path).c_str(),
                    watch,
                    watcherCtx,
                    vector);
+  zk_timing_end("wget_children");
   if (error_code != ZOK) {
     LOG(ERROR) << "wget_children on " << path << " failed";
     print_error(error_code);

@@ -1,6 +1,7 @@
 // Copyright 2017 Rice University, COMP 413 2017
 
 #include <iostream>
+#include <thread>
 #include "NameNodeTest.h"
 
 TEST_F(NamenodeTest, getOneFileListing) {
@@ -125,20 +126,20 @@ TEST_F(NamenodeTest, listingPerformance) {
 
     int i = 0;
     std::vector<int> depths = {5, 100};
-    std::vector<int> dir_nums = {10, 100, 1000};
+    std::vector<int> num_files = {10, 100, 250, 500};
     std::vector<int> num_requests = {10, 100, 1000};
 
     for (auto depth : depths) {
-        for (auto dir_num : dir_nums) {
-            auto dir_string = "/testing/list_testing_depth" +
+        for (auto num_file : num_files) {
+            auto dir_string = "/list_testing_depth" +
                 std::to_string(depth) +
-                "_size" + std::to_string(dir_num) + "/";
+                "_size" + std::to_string(num_file) + "/";
 
             for (i = 0; i < depth - 2; i++) {
                 dir_string += std::to_string(i) + "/";
             }
 
-            for (i = 0; i < dir_num; i++) {
+            for (i = 0; i < num_file; i++) {
                 hadoop::hdfs::CreateRequestProto create_req;
                 hadoop::hdfs::CreateResponseProto create_resp;
                 create_req.set_src(dir_string + std::to_string(i));
@@ -158,19 +159,19 @@ TEST_F(NamenodeTest, listingPerformance) {
     zkclient::ZkNnClient::ListingResponse client_response;
 
     for (auto depth : depths) {
-        for (auto dir_num : dir_nums) {
+        for (auto num_file : num_files) {
             for (auto num_request : num_requests) {
-                auto timer_string = "get_listing_depth" +
-                        std::to_string(depth) +
-                        "_size" + std::to_string(dir_num) +
-                        "_requests" + std::to_string(num_request);
-                TIMED_SCOPE_IF(listingPerformanceObj,
-                               timer_string,
-                               VLOG_IS_ON(9));
+//                auto timer_string = "get_listing_depth" +
+//                        std::to_string(depth) +
+//                        "_size" + std::to_string(dir_num) +
+//                        "_requests" + std::to_string(num_request);
+//                TIMED_SCOPE_IF(listingPerformanceObj,
+//                               timer_string,
+//                               VLOG_IS_ON(9));
 
-                auto dir_string = "/testing/list_testing_depth" +
+                auto dir_string = "/list_testing_depth" +
                     std::to_string(depth) +
-                    "_size" + std::to_string(dir_num) + "/";
+                    "_size" + std::to_string(num_file) + "/";
 
                 for (i = 0; i < depth - 2; i++) {
                     dir_string += std::to_string(i) + "/";
@@ -191,10 +192,131 @@ TEST_F(NamenodeTest, listingPerformance) {
                     hadoop::hdfs::HdfsFileStatusProto file_status;
                     EXPECT_TRUE(listing_resp.has_dirlist());
                     dir_listing = listing_resp.dirlist();
-                    EXPECT_EQ(dir_listing.partiallisting_size(), dir_num);
+                    EXPECT_EQ(dir_listing.partiallisting_size(), num_file);
                     listing_resp.clear_dirlist();
                 }
             }
         }
     }
+
+    std::cerr << "Warmup done and sleeping for a while\n";
+    std::this_thread::sleep_for(std::chrono::seconds(30));
+    std::cerr << "Round 1\n";
+
+    for (auto depth : depths) {
+        for (auto num_file : num_files) {
+            for (auto num_request : num_requests) {
+                auto dir_string = "/list_testing_depth" +
+                                  std::to_string(depth) +
+                                  "_size" + std::to_string(num_file) + "/";
+
+                for (i = 0; i < depth - 2; i++) {
+                    dir_string += std::to_string(i) + "/";
+                }
+
+                std::cerr << "listing depth " << std::to_string(depth) << " num_file " << std::to_string(num_file) << " num_request " << std::to_string(num_request) << "\n";
+                for (i = 0; i < num_request; i++) {
+                    listing_req.set_src(dir_string);
+                    listing_req.set_startafter(0);
+                    listing_req.set_needlocation(false);
+                    client_response = client->get_listing(listing_req,
+                                                          listing_resp);
+                    EXPECT_EQ(client_response,
+                              zkclient::ZkNnClient::ListingResponse::Ok)
+                                        << "File not found";
+
+                    // Check that we've gotten the number of files we expected.
+                    hadoop::hdfs::DirectoryListingProto dir_listing;
+                    hadoop::hdfs::HdfsFileStatusProto file_status;
+                    EXPECT_TRUE(listing_resp.has_dirlist());
+                    dir_listing = listing_resp.dirlist();
+                    EXPECT_EQ(dir_listing.partiallisting_size(), num_file);
+                    listing_resp.clear_dirlist();
+                }
+                std::cerr << "done and sleeping for a while\n";
+                std::this_thread::sleep_for(std::chrono::seconds(10));
+            }
+        }
+    }
+
+    std::cerr << "Round 1 done and sleeping for a while\n";
+    std::this_thread::sleep_for(std::chrono::seconds(30));
+    std::cerr << "Round 2\n";
+
+    for (auto depth : depths) {
+        for (auto num_file : num_files) {
+            for (auto num_request : num_requests) {
+                auto dir_string = "/list_testing_depth" +
+                                  std::to_string(depth) +
+                                  "_size" + std::to_string(num_file) + "/";
+
+                for (i = 0; i < depth - 2; i++) {
+                    dir_string += std::to_string(i) + "/";
+                }
+
+                std::cerr << "listing depth " << std::to_string(depth) << " num_file " << std::to_string(num_file) << " num_request " << std::to_string(num_request) << "\n";
+                for (i = 0; i < num_request; i++) {
+                    listing_req.set_src(dir_string);
+                    listing_req.set_startafter(0);
+                    listing_req.set_needlocation(false);
+                    client_response = client->get_listing(listing_req,
+                                                          listing_resp);
+                    EXPECT_EQ(client_response,
+                              zkclient::ZkNnClient::ListingResponse::Ok)
+                                        << "File not found";
+
+                    // Check that we've gotten the number of files we expected.
+                    hadoop::hdfs::DirectoryListingProto dir_listing;
+                    hadoop::hdfs::HdfsFileStatusProto file_status;
+                    EXPECT_TRUE(listing_resp.has_dirlist());
+                    dir_listing = listing_resp.dirlist();
+                    EXPECT_EQ(dir_listing.partiallisting_size(), num_file);
+                    listing_resp.clear_dirlist();
+                }
+                std::cerr << "done and sleeping for a while\n";
+                std::this_thread::sleep_for(std::chrono::seconds(10));
+            }
+        }
+    }
+
+    std::cerr << "Round 2 done and sleeping for a while\n";
+    std::this_thread::sleep_for(std::chrono::seconds(30));
+    std::cerr << "Round 3\n";
+
+    for (auto depth : depths) {
+        for (auto num_file : num_files) {
+            for (auto num_request : num_requests) {
+                auto dir_string = "/list_testing_depth" +
+                                  std::to_string(depth) +
+                                  "_size" + std::to_string(num_file) + "/";
+
+                for (i = 0; i < depth - 2; i++) {
+                    dir_string += std::to_string(i) + "/";
+                }
+
+                std::cerr << "listing depth " << std::to_string(depth) << " num_file " << std::to_string(num_file) << " num_request " << std::to_string(num_request) << "\n";
+                for (i = 0; i < num_request; i++) {
+                    listing_req.set_src(dir_string);
+                    listing_req.set_startafter(0);
+                    listing_req.set_needlocation(false);
+                    client_response = client->get_listing(listing_req,
+                                                          listing_resp);
+                    EXPECT_EQ(client_response,
+                              zkclient::ZkNnClient::ListingResponse::Ok)
+                                        << "File not found";
+
+                    // Check that we've gotten the number of files we expected.
+                    hadoop::hdfs::DirectoryListingProto dir_listing;
+                    hadoop::hdfs::HdfsFileStatusProto file_status;
+                    EXPECT_TRUE(listing_resp.has_dirlist());
+                    dir_listing = listing_resp.dirlist();
+                    EXPECT_EQ(dir_listing.partiallisting_size(), num_file);
+                    listing_resp.clear_dirlist();
+                }
+                std::cerr << "done and sleeping for a while\n";
+                std::this_thread::sleep_for(std::chrono::seconds(10));
+            }
+        }
+    }
+    std::cerr << "Round 3 done\n";
 }

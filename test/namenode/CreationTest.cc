@@ -202,5 +202,6 @@ TEST_F(NamenodeTest, creationPerformance) {
             std::this_thread::sleep_for(std::chrono::seconds(20));
         }
     }
+    std::cerr << "Round 3 done\n";
 }
 
