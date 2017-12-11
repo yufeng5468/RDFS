@@ -773,6 +773,8 @@ ZkNnClient::GetFileInfoResponse ZkNnClient::get_info(
   std::string client_name) {
   const std::string &path = req.src();
 
+  this->zk->reset_zk_time();
+  nn_timing_start();
   if (file_exists(path)) {
     // read the node into the file node struct
     FileZNode znode_data;
@@ -781,6 +783,7 @@ ZkNnClient::GetFileInfoResponse ZkNnClient::get_info(
     // Check access
     if (!checkAccess(client_name, znode_data)) {
       LOG(ERROR) << "[get_info] Access denied to path " << path;
+      nn_timing_end();
       return GetFileInfoResponse::FileAccessRestricted;
     }
 
@@ -789,9 +792,11 @@ ZkNnClient::GetFileInfoResponse ZkNnClient::get_info(
 
     set_file_info(status, path, znode_data);
     LOG(INFO) << "[get_info] Got info for file ";
+    nn_timing_end();
     return GetFileInfoResponse::Ok;
   } else {
     LOG(INFO) << "[get_info] No file to get info for";
+    nn_timing_end();
     return GetFileInfoResponse::FileDoesNotExist;
   }
 }
@@ -1260,12 +1265,15 @@ ZkNnClient::RenameResponse ZkNnClient::rename(RenameRequestProto& req,
                                               std::string client_name) {
   std::string file_path = req.src();
 
+  this->zk->reset_zk_time();
+  nn_timing_start();
   FileZNode znode_data;
   read_file_znode(znode_data, file_path);
 
   // Check access
   if (!checkAccess(client_name, znode_data)) {
     LOG(ERROR) << "[rename] Access denied to path " << file_path;
+    nn_timing_end();
     return RenameResponse::FileAccessRestricted;
   }
 
@@ -1273,6 +1281,7 @@ ZkNnClient::RenameResponse ZkNnClient::rename(RenameRequestProto& req,
     LOG(ERROR) << "[rename] Requested rename source: "
                << file_path << " does not exist";
     res.set_result(false);
+    nn_timing_end();
       return RenameResponse::FileDoesNotExist;
   }
 
@@ -1282,6 +1291,7 @@ ZkNnClient::RenameResponse ZkNnClient::rename(RenameRequestProto& req,
       LOG(ERROR) << "[rename] Failed to generate rename operatons for: "
                  << file_path;
       res.set_result(false);
+      nn_timing_end();
         return RenameResponse::RenameOpsFailed;
     }
 
@@ -1290,6 +1300,7 @@ ZkNnClient::RenameResponse ZkNnClient::rename(RenameRequestProto& req,
       LOG(ERROR) << "[rename] Failed to generate rename operatons for: "
                  << file_path;
       res.set_result(false);
+      nn_timing_end();
         return RenameResponse::RenameOpsFailed;
     }
 
@@ -1298,6 +1309,7 @@ ZkNnClient::RenameResponse ZkNnClient::rename(RenameRequestProto& req,
                << file_path
                << " is not a file or dir";
     res.set_result(false);
+    nn_timing_end();
       return RenameResponse::InvalidType;
   }
 
@@ -1324,6 +1336,7 @@ ZkNnClient::RenameResponse ZkNnClient::rename(RenameRequestProto& req,
               << " to "
               << req.dst();
     res.set_result(true);
+    nn_timing_end();
       return RenameResponse::Ok;
   }
 }

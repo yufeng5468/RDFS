@@ -92,8 +92,8 @@ TEST_F(NamenodeTest, movingPerformance) {
     hadoop::hdfs::RenameRequestProto rename_req;
     hadoop::hdfs::RenameResponseProto rename_resp;
     std::vector<int> depths = {5, 10, 100};
-    std::vector<int> entries = {10, 100, 1000};
-    std::vector<int> requests = {10, 100, 1000};
+    std::vector<int> entries = {5, 10, 50};
+    std::vector<int> requests = {5, 10, 50};
 
     for (int d : depths) {
         for (int e : entries) {
@@ -108,10 +108,10 @@ TEST_F(NamenodeTest, movingPerformance) {
             std::string top_level = "/" + std::to_string(d) + "_" +
                                     std::to_string(e) + "_d0";
             for (int total_requests : requests) {
-                TIMED_SCOPE_IF(timerObj1, "renaming " +
-                std::to_string(total_requests) + " times with depth " +
-                std::to_string(d) + " and " + std::to_string(e) +
-                " entries.", VLOG_IS_ON(9));
+//                TIMED_SCOPE_IF(timerObj1, "renaming " +
+//                std::to_string(total_requests) + " times with depth " +
+//                std::to_string(d) + " and " + std::to_string(e) +
+//                " entries.", VLOG_IS_ON(9));
                 for (int r; r < total_requests; r++) {
                     std::string renamed = "/renamed" + std::to_string(r);
                     rename_req.set_src(top_level);
