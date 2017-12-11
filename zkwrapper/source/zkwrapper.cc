@@ -153,17 +153,20 @@ bool ZKWrapper::create(const std::string &path,
   auto real_path = prepend_zk_root(path);
   LOG(INFO) << "creating ZNode at " << real_path;
   int flag = (ephemeral) ? ZOO_EPHEMERAL : 0;
+  zk_timing_start();
   int rc = zoo_create(zh,
-                      real_path.c_str(),
-                      reinterpret_cast<const char *>(data.data()),
-                      data.size(),
-                      &ZOO_OPEN_ACL_UNSAFE,
-                      flag,
-                      nullptr,
-                      0);
+            real_path.c_str(),
+            reinterpret_cast<const char *>(data.data()),
+            data.size(),
+            &ZOO_OPEN_ACL_UNSAFE,
+            flag,
+            nullptr,
+            0);
+  zk_timing_end("create");
   error_code = rc;
 
   if (sync && !rc) {
+    //TODO just use real_path here
     flush(prepend_zk_root(path));
   }
 
@@ -285,12 +288,14 @@ bool ZKWrapper::get(const std::string &path,
   int len = length;
   // TODO(2016): Perhaps we can be smarter about this
   data.resize(len);
+  zk_timing_start();
   error_code = zoo_get(zh,
                        prepend_zk_root(path).c_str(),
                        0,
                        reinterpret_cast<char *>(data.data()),
                        &len,
                        &stat);
+  zk_timing_end("get");
   if (error_code != ZOK) {
     LOG(ERROR) << "get on " << path << " failed";
     print_error(error_code);
@@ -327,7 +332,9 @@ bool ZKWrapper::exists(const std::string &path,
                        bool &exist,
                        int &error_code) const {
   // TODO(2016): for now watch argument is set to 0, need more error checking
+  zk_timing_start();
   int rc = zoo_exists(zh, prepend_zk_root(path).c_str(), 0, 0);
+  zk_timing_end("exists");
   error_code = rc;
   if (rc == ZOK) {
     exist = true;
@@ -349,10 +356,12 @@ bool ZKWrapper::wexists(const std::string &path,
                         void *watcherCtx,
                         int &error_code) const {
   struct Stat stat;
+  zk_timing_start();
   int rc = zoo_wexists(zh,
-                       prepend_zk_root(path).c_str(),
-                       watch,
-                       watcherCtx, &stat);
+             prepend_zk_root(path).c_str(),
+             watch,
+             watcherCtx, &stat);
+  zk_timing_end("wexists");
   error_code = rc;
   if (rc == ZOK) {
     exist = true;
@@ -470,11 +479,13 @@ bool ZKWrapper::wget_children(const std::string &path,
                               int &error_code) const {
   struct String_vector stvector;
   struct String_vector *vector = &stvector;
+  zk_timing_start();
   error_code = zoo_wget_children(zh,
-                                 prepend_zk_root(path).c_str(),
-                                 watch,
-                                 watcherCtx,
-                                 vector);
+                   prepend_zk_root(path).c_str(),
+                   watch,
+                   watcherCtx,
+                   vector);
+  zk_timing_end("wget_children");
   if (error_code != ZOK) {
     LOG(ERROR) << "wget_children on " << path << " failed";
     print_error(error_code);
@@ -555,12 +566,17 @@ std::vector<uint8_t> ZKWrapper::get_byte_vector(const std::string &string) {
   return vec;
 }
 
+void ZKWrapper::reset_zk_time() {
+  this->zk_time = 0;
+}
+
 void ZKWrapper::close() {
   zookeeper_close(zh);
 }
 
 bool ZKWrapper::flush(const std::string &full_path, bool synchronous) const {
   // flush is only blocking when the synchronous flag is set
+  zk_timing_start();
   if (synchronous) {
     // I tried using condition variables,
     // but it ended up failing on occasion, so sadly I resort to polling :(
@@ -572,6 +588,10 @@ bool ZKWrapper::flush(const std::string &full_path, bool synchronous) const {
                                         const void *data) {
       bool *flag_ptr = const_cast<bool *>(reinterpret_cast<const bool *>(data));
       *flag_ptr = true;
+      //TODO why are we sleeping upon zoo_async completion? Also, this is sleeping the asynchronous flush thread, not the context thread.
+      //Ok I think the reason for this sleep is that they wanted to do free() in this callback in case flush() has given up waiting.
+      //But if free() happened without any sleep, then flush() might be looking at a dangling pointer by the time it's scheduled.
+      //This is really nonsense.
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
       free(flag_ptr);
     };
@@ -582,6 +602,7 @@ bool ZKWrapper::flush(const std::string &full_path, bool synchronous) const {
     if (rc) {
       LOG(ERROR) << "Flushing " << full_path << " failed";
       print_error(rc);
+      zk_timing_end("flush");
       return false;
     }
 
@@ -595,9 +616,15 @@ bool ZKWrapper::flush(const std::string &full_path, bool synchronous) const {
     if (count == 2000) {
       LOG(ERROR) << "SYNC FOR" << full_path << " was slow";
     }
+    zk_timing_end("flush");
     return true;
   } else {
     auto no_op = [&](int rc, const char *value, const void *data) {};
-    return zoo_async(zh, full_path.c_str(), no_op, nullptr);
+    auto rv = zoo_async(zh, full_path.c_str(), no_op, nullptr);
+//    auto now = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
+//    auto epoch = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+//    std::cerr << "flush issued at " << epoch.count() << "\n";
+    zk_timing_end("flush");
+    return rv;
   }
 }

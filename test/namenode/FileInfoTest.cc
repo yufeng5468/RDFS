@@ -1,6 +1,7 @@
 // Copyright 2017 Rice University, COMP 413 2017
 
 #include "NameNodeTest.h"
+#include <thread>
 
 
 TEST_F(NamenodeTest, statFile) {
@@ -58,9 +59,9 @@ TEST_F(NamenodeTest, statPerformance) {
   el::Loggers::setVerboseLevel(9);
 
   auto root_src = std::string{"/testing"};
-  auto depths = std::vector<int>{5, 100};
-  auto num_chars_per_level = std::vector<int>{5, 50};
-  auto num_iters = std::vector<int>{10, 100, 1000};
+  auto depths = std::vector<int>{50};
+  auto num_chars_per_level = std::vector<int>{5};
+  auto num_iters = std::vector<int>{10, 100, 500, 1000};
   auto pathnames = std::map<int, std::map<int, std::string>>{};
 
   // Create the necessary files.
@@ -94,9 +95,9 @@ TEST_F(NamenodeTest, statPerformance) {
     for (auto c : num_chars_per_level) {
       for (auto i : num_iters) {
         for (int j = 0; j < i; j++) {
-          TIMED_SCOPE_IF(statPerformanceTimer, "stat depth " +
-              std::to_string(d) + " num_chars_per_level " + std::to_string(c),
-                         VLOG_IS_ON(9));
+//          TIMED_SCOPE_IF(statPerformanceTimer, "stat depth " +
+//              std::to_string(d) + " num_chars_per_level " + std::to_string(c),
+//                         VLOG_IS_ON(9));
           hadoop::hdfs::GetFileInfoRequestProto file_info_req;
           hadoop::hdfs::GetFileInfoResponseProto file_info_resp;
           file_info_req.set_src(pathnames[d][c]);
@@ -106,4 +107,68 @@ TEST_F(NamenodeTest, statPerformance) {
       }
     }
   }
+
+  std::cerr << "Warmup done and sleeping for a while\n";
+  std::this_thread::sleep_for(std::chrono::seconds(30));
+  std::cerr << "Round 1\n";
+
+  for (auto d : depths) {
+    for (auto c : num_chars_per_level) {
+      for (auto i : num_iters) {
+        std::cerr << "file_info depth " << std::to_string(d) << " num_iters " << std::to_string(i) << "\n";
+        for (int j = 0; j < i; j++) {
+          hadoop::hdfs::GetFileInfoRequestProto file_info_req;
+          hadoop::hdfs::GetFileInfoResponseProto file_info_resp;
+          file_info_req.set_src(pathnames[d][c]);
+          ASSERT_EQ(client->get_info(file_info_req, file_info_resp),
+                    zkclient::ZkNnClient::GetFileInfoResponse::Ok);
+        }
+        std::cerr << "done and sleeping for a while\n";
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+      }
+    }
+  }
+
+  std::cerr << "Round 1 done and sleeping for a while\n";
+  std::this_thread::sleep_for(std::chrono::seconds(30));
+  std::cerr << "Round 2\n";
+
+  for (auto d : depths) {
+    for (auto c : num_chars_per_level) {
+      for (auto i : num_iters) {
+        std::cerr << "file_info depth " << std::to_string(d) << " num_iters " << std::to_string(i) << "\n";
+        for (int j = 0; j < i; j++) {
+          hadoop::hdfs::GetFileInfoRequestProto file_info_req;
+          hadoop::hdfs::GetFileInfoResponseProto file_info_resp;
+          file_info_req.set_src(pathnames[d][c]);
+          ASSERT_EQ(client->get_info(file_info_req, file_info_resp),
+                    zkclient::ZkNnClient::GetFileInfoResponse::Ok);
+        }
+        std::cerr << "done and sleeping for a while\n";
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+      }
+    }
+  }
+
+  std::cerr << "Round 2 done and sleeping for a while\n";
+  std::this_thread::sleep_for(std::chrono::seconds(30));
+  std::cerr << "Round 3\n";
+
+  for (auto d : depths) {
+    for (auto c : num_chars_per_level) {
+      for (auto i : num_iters) {
+        std::cerr << "file_info depth " << std::to_string(d) << " num_iters " << std::to_string(i) << "\n";
+        for (int j = 0; j < i; j++) {
+          hadoop::hdfs::GetFileInfoRequestProto file_info_req;
+          hadoop::hdfs::GetFileInfoResponseProto file_info_resp;
+          file_info_req.set_src(pathnames[d][c]);
+          ASSERT_EQ(client->get_info(file_info_req, file_info_resp),
+                    zkclient::ZkNnClient::GetFileInfoResponse::Ok);
+        }
+        std::cerr << "done and sleeping for a while\n";
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+      }
+    }
+  }
+  std::cerr << "Round 3 done\n";
 }

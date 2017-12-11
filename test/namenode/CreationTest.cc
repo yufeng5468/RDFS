@@ -1,12 +1,13 @@
 // Copyright 2017 Rice University, COMP 413 2017
 
 #include "NameNodeTest.h"
+#include <thread>
 
 std::vector<std::string> createTestString(
-        int num_files, int num_dirs
+        int num_files, int num_dirs, int round
 ) {
     std::vector<std::string> generated_files;
-    std::string prefix = std::to_string(num_files) + "_" +
+    std::string prefix = std::to_string(round) + "round" + std::to_string(num_files) + "_" +
         std::to_string(num_dirs) + "_";
     // Create the intermediate directories
     for (int i = 0; i < num_files; i++) {
@@ -16,7 +17,7 @@ std::vector<std::string> createTestString(
                 std::to_string(d);
         }
         // Now add the actual file
-        temp = temp + "/" + prefix + "file";
+        temp = temp + "/" + prefix + "file" + std::to_string(i);
         generated_files.push_back(temp);
     }
     return generated_files;
@@ -125,22 +126,82 @@ TEST_F(NamenodeTest, creationPerformance) {
     std::vector<std::string> files;
     hadoop::hdfs::CreateRequestProto create_req;
     hadoop::hdfs::CreateResponseProto create_resp;
-    std::vector<int> num_files = {5, 10, 100};
-    std::vector<int> num_dirs = {10, 100};
+    std::vector<int> warmup_files = {64, 64, 64, 64, 64};
+    std::vector<int> warmup_dirs = {0};
+    std::vector<int> num_files = {5, 50, 100, 150, 200, 250, 500};
+    std::vector<int> num_dirs = {0};
 
     for (int f : num_files) {
         for (int d : num_dirs) {
-            files = createTestString(f, d);
-            TIMED_SCOPE_IF(timerObj1, "create " + std::to_string(f) +
-                " files with " + std::to_string(d) +
-                " intermediate directories", VLOG_IS_ON(9));
-            for (std::string f : files) {
-                create_req = getCreateRequestProto(f);
+            files = createTestString(f, d, 0);
+//            TIMED_SCOPE_IF(timerObj1, "create " + std::to_string(f) +
+//                " files with " + std::to_string(d) +
+//                " intermediate directories", VLOG_IS_ON(9));
+            for (std::string fn : files) {
+                create_req = getCreateRequestProto(fn);
                 create_req.set_createparent(true);
                 ASSERT_EQ(client->create_file(create_req, create_resp),
                           zkclient::ZkNnClient::CreateResponse::Ok);
             }
         }
     }
+
+    std::cerr << "Warmup done and sleeping for a while\n";
+    std::this_thread::sleep_for(std::chrono::seconds(30));
+    std::cerr << "Round 1\n";
+
+    for (int f : num_files) {
+        for (int d : num_dirs) {
+            std::cerr << "create num_files " << std::to_string(f) << " num_dirs " << std::to_string(d) << "\n";
+            files = createTestString(f, d, 1);
+            for (std::string fn : files) {
+                create_req = getCreateRequestProto(fn);
+                create_req.set_createparent(true);
+                ASSERT_EQ(client->create_file(create_req, create_resp),
+                          zkclient::ZkNnClient::CreateResponse::Ok);
+            }
+            std::cerr << "done and sleeping for a while\n";
+            std::this_thread::sleep_for(std::chrono::seconds(20));
+        }
+    }
+
+    std::cerr << "Round 1 done and sleeping for a while\n";
+    std::this_thread::sleep_for(std::chrono::seconds(30));
+    std::cerr << "Round 2\n";
+
+    for (int f : num_files) {
+        for (int d : num_dirs) {
+            std::cerr << "create num_files " << std::to_string(f) << " num_dirs " << std::to_string(d) << "\n";
+            files = createTestString(f, d, 2);
+            for (std::string fn : files) {
+                create_req = getCreateRequestProto(fn);
+                create_req.set_createparent(true);
+                ASSERT_EQ(client->create_file(create_req, create_resp),
+                          zkclient::ZkNnClient::CreateResponse::Ok);
+            }
+            std::cerr << "done and sleeping for a while\n";
+            std::this_thread::sleep_for(std::chrono::seconds(20));
+        }
+    }
+
+    std::cerr << "Round 2 done and sleeping for a while\n";
+    std::this_thread::sleep_for(std::chrono::seconds(30));
+    std::cerr << "Round 3\n";
+
+    for (int f : num_files) {
+        for (int d : num_dirs) {
+            std::cerr << "create num_files " << std::to_string(f) << " num_dirs " << std::to_string(d) << "\n";
+            files = createTestString(f, d, 3);
+            for (std::string fn : files) {
+                create_req = getCreateRequestProto(fn);
+                create_req.set_createparent(true);
+                ASSERT_EQ(client->create_file(create_req, create_resp),
+                          zkclient::ZkNnClient::CreateResponse::Ok);
+            }
+            std::cerr << "done and sleeping for a while\n";
+            std::this_thread::sleep_for(std::chrono::seconds(20));
+        }
+    }
+    std::cerr << "Round 3 done\n";
 }
 
